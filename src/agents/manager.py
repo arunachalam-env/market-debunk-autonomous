@@ -170,7 +170,7 @@ def run_pipeline():
             if settings.FACT_CHECK_ENABLED:
                 from src.agents.fact_check_agent import FactCheckAgent
                 fc_agent = FactCheckAgent()
-                fc_result = fc_agent.check_script(script_dict, thesis=thesis)
+                fc_result = fc_agent.check_script(script_dict, thesis=thesis, source_excerpt=str(story_seed.get("source_excerpt", "")))
 
                 # One regeneration attempt: feed the blocked claims back to the
                 # writer so it can drop/rephrase them, then re-run the gate.
@@ -195,7 +195,7 @@ def run_pipeline():
                         )
                         script_dict = script_agent.script_to_dict(script)
                         script_dict = rewriter.auto_repair_script(script_dict, topic=thesis)
-                        fc_result = fc_agent.check_script(script_dict, thesis=thesis)
+                        fc_result = fc_agent.check_script(script_dict, thesis=thesis, source_excerpt=str(story_seed.get("source_excerpt", "")))
 
                 if not fc_result.passed:
                     blocking = fc_result.check_ran or settings.FACT_CHECK_REQUIRED

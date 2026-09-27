@@ -715,10 +715,12 @@ Output ONLY the JSON. No explanation, no preamble, no markdown fences."""
             )
             retry = _extract_seed(corrected_prompt)
             if retry is not None and not _seed_figure_violations(retry, raw_transcript):
+                _attach_source_excerpt(retry, raw_transcript)
                 return retry
             log.warning("Seed still untraceable after correction; falling back to title-based seed.")
             result = None
     if result is not None:
+        _attach_source_excerpt(result, raw_transcript)
         return result
 
     # Dynamic fallback derived purely from the real video title (no static templates)
@@ -734,6 +736,18 @@ Output ONLY the JSON. No explanation, no preamble, no markdown fences."""
             "visual_evidence": "financial charts and verified market figures",
         }
     }
+
+
+def _attach_source_excerpt(result: dict, raw_transcript: str, limit: int = 1500) -> None:
+    """Persist a bounded excerpt of the source text on the story_seed so the
+    downstream fact-check gate can catch MISREADINGS (e.g. 'loss narrowed 78%'
+    rendered as '78% profit jump'), which presence-validation cannot."""
+    try:
+        excerpt = (raw_transcript or "").strip()[:limit]
+        if excerpt and isinstance(result.get("story_seed"), dict):
+            result["story_seed"]["source_excerpt"] = excerpt
+    except Exception:
+        pass
 
 
 def _is_strictly_within_24h(date_str: str) -> bool:

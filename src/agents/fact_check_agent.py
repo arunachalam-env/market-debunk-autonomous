@@ -135,7 +135,7 @@ class FactCheckAgent:
         configured = model or getattr(settings, "FACT_CHECK_MODEL", "")
         self.model = configured or FACT_CHECK_MODEL_FALLBACKS[0]
 
-    def check_script(self, script_dict: dict, thesis: str = "") -> FactCheckResult:
+    def check_script(self, script_dict: dict, thesis: str = "", source_excerpt: str = "") -> FactCheckResult:
         """Run the gate. Returns a FactCheckResult; caller decides what blocking means."""
         title = str(script_dict.get("title", "")).strip()
         narration = "\n".join(
@@ -151,7 +151,7 @@ class FactCheckAgent:
         checked_text = f"ON-SCREEN TITLE: {title}\n\nNARRATION:\n{narration}" if title else narration
 
         try:
-            raw = self._verify_with_grounded_model(checked_text, thesis)
+            raw = self._verify_with_grounded_model(checked_text, thesis, source_excerpt)
         except Exception as exc:
             log.error("Fact-check call failed: %s", exc)
             return FactCheckResult(passed=False, check_ran=False, error=str(exc))
@@ -163,7 +163,7 @@ class FactCheckAgent:
             # verdict: retry the whole check once before failing closed.
             log.warning("Fact-check response unparseable (%s); regenerating verdict once.", exc)
             try:
-                raw = self._verify_with_grounded_model(checked_text, thesis)
+                raw = self._verify_with_grounded_model(checked_text, thesis, source_excerpt)
                 claims = parse_verdict_response(raw)
             except Exception as exc2:
                 log.error("Fact-check response unparseable after retry: %s", exc2)
@@ -180,7 +180,7 @@ class FactCheckAgent:
             log.warning("🛑 Fact-check BLOCKED publication:\n%s", result.summary())
         return result
 
-    def _verify_with_grounded_model(self, narration: str, thesis: str) -> str:
+    def _verify_with_grounded_model(self, narration: str, thesis: str, source_excerpt: str = "") -> str:
         from google import genai
         from google.genai import types
 
@@ -195,6 +195,18 @@ class FactCheckAgent:
         api_keys = [k.strip() for k in keys_str.split(",") if k.strip()]
         if not api_keys and not getattr(settings, "GROQ_API_KEY", ""):
             raise RuntimeError("no Gemini API key available for fact-checking")
+        excerpt = (source_excerpt or "").strip()
+        source_block = ""
+        if excerpt:
+            source_block = f"""
+SOURCE EXCERPT (the original reporting this video summarizes):
+{excerpt[:1500]}
+
+For every extracted claim, FIRST check it against this source excerpt: a claim
+that misreads the source (wrong direction, wrong metric, wrong subject - e.g.
+'loss narrowed 78%' rendered as 'profit jumped 78%') is REFUTED even when the
+number itself appears in the text. Then verify against current web sources.
+"""
         prompt = f"""You are a meticulous financial fact-checker for an Indian retail-investor Shorts channel.
 
 Below is the full narration of a 25-second video (topic thesis: {thesis or 'n/a'}).
@@ -202,7 +214,7 @@ The text may begin with an ON-SCREEN TITLE line: the title is a viewer-facing
 factual claim too - extract and verify claims in it exactly like narration.
 
 {narration}
-
+{source_block}
 Task:
 1. Extract every checkable factual claim (statistics, percentages, rupee amounts, laws/regulations, regulator actions, company events, dates). Skip pure opinion, generic advice, and rhetorical hooks.
 2. Verify each claim against current, reputable web sources using Google Search.

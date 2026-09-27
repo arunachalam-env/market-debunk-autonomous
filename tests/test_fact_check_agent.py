@@ -65,7 +65,7 @@ def test_empty_narration_fails_closed():
 
 def test_api_error_fails_closed(monkeypatch):
     agent = FactCheckAgent()
-    def boom(_narration, _thesis):
+    def boom(_narration, _thesis, _src=""):
         raise RuntimeError("no key")
     monkeypatch.setattr(agent, "_verify_with_grounded_model", boom)
     result = agent.check_script({"scenes": [{"narration": "Banks charge 40% hidden fees."}]})
@@ -316,7 +316,7 @@ def test_unparseable_response_retries_once(monkeypatch):
     agent = FactCheckAgent()
     calls = []
 
-    def fake_verify(narration, thesis):
+    def fake_verify(narration, thesis, source_excerpt=""):
         calls.append(1)
         return '{"claims": [{"claim": "x", "verdict": "UNVERIF'
 
@@ -335,7 +335,7 @@ def test_unparseable_then_valid_recovers(monkeypatch):
         '{"claims": [{"claim": "x", "verdict": "UNVERIF',
         '{"claims": [{"claim": "x", "verdict": "SUPPORTED", "reason": "ok"}]}',
     ])
-    monkeypatch.setattr(agent, "_verify_with_grounded_model", lambda n, t: next(outputs))
+    monkeypatch.setattr(agent, "_verify_with_grounded_model", lambda n, t, s_ex="": next(outputs))
     result = agent.check_script({"scenes": [{"narration": "prices are rising fast"}]}, thesis="t")
     assert result.check_ran is True
     assert result.passed is True
@@ -391,7 +391,7 @@ def test_title_is_checked_with_narration(monkeypatch):
     agent = FactCheckAgent(model="gemini-test")
     seen = {}
 
-    def fake_verify(text, thesis):
+    def fake_verify(text, thesis, source_excerpt=""):
         seen["text"] = text
         return '{"claims": [{"claim": "x", "verdict": "SUPPORTED", "reason": "r"}]}'
 
@@ -411,7 +411,7 @@ def test_title_claim_can_block(monkeypatch):
 
     agent = FactCheckAgent(model="gemini-test")
 
-    def fake_verify(text, thesis):
+    def fake_verify(text, thesis, source_excerpt=""):
         return '{"claims": [{"claim": "78% profit jump", "verdict": "REFUTED", "reason": "loss narrowed, not profit"}]}'
 
     monkeypatch.setattr(agent, "_verify_with_grounded_model", fake_verify)
@@ -420,3 +420,23 @@ def test_title_claim_can_block(monkeypatch):
         thesis="t",
     )
     assert not result.passed
+
+
+def test_source_excerpt_reaches_checker(monkeypatch):
+    """The source excerpt (for misreading detection) must reach the prompt."""
+    from src.agents.fact_check_agent import FactCheckAgent
+
+    agent = FactCheckAgent(model="gemini-test")
+    seen = {}
+
+    def fake_verify(text, thesis, source_excerpt=""):
+        seen["src"] = source_excerpt
+        return '{"claims": [{"claim": "x", "verdict": "SUPPORTED", "reason": "r"}]}'
+
+    monkeypatch.setattr(agent, "_verify_with_grounded_model", fake_verify)
+    agent.check_script(
+        {"title": "T", "scenes": [{"narration": "n"}]},
+        thesis="t",
+        source_excerpt="Paytm net loss narrowed 78% YoY",
+    )
+    assert "net loss narrowed 78%" in seen["src"]
