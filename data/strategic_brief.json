@@ -1,12 +1,12 @@
 {
-  "topic_thesis": "Warren Buffett didn't buy Nebraska Furniture Mart for the sofas; he bought it to use your customer deposits as an interest-free loan to gamble on the stock market.",
-  "strategic_angle": "Expose the 'Float Utilization' mechanism, revealing that every time a consumer finances a purchase, they are effectively providing the retailer's parent company with cost-free capital to fuel institutional-grade investments while the consumer pays interest.",
+  "topic_thesis": "Listed Indian manufacturing giants quietly pass an 11-13% cumulative price hike onto consumers over two quarters under the guise of raw material inflation to artificially pump operating margins.",
+  "strategic_angle": "Expose the corporate earnings playbook reported by brokerage trackers: companies hike prices by 7-9% in Q1 and another 3-4% in Q2, passing 100% of input costs to consumers while retail investors blindly buy the stock at all-time highs thinking margin growth is from operational efficiency.",
   "format_type": "STANDALONE",
   "hook_style": "HARD_NUMBER_SHOCK",
   "hook_type": "LOSS_IMPLICATION",
-  "key_statistic": "100% of the float is reinvested; customers pay 15-20% APR on furniture while the retailer earns compound interest on the cash flow.",
-  "target_emotion": "Indignation and realization of being a pawn in a larger capital machine.",
-  "pinned_comment_text": "Are you paying interest to a billionaire while they invest your money for themselves? Type 'GUIDE' if you want our breakdown on how to spot these 'Float Traps' in your own bank statements. \ud83d\udcac\ud83d\udc47",
-  "tamil_adaptation_directive": "Use the term 'Interest-Free Loan Trap'. Explain that when people buy on EMI, the shop owner isn't just selling a product, they are using the cash flow to play 'Sattai' (gambling/betting) in the market. Use phrases like 'Bank Manager pesura pechu' and 'Namma paisa, avan growth'.",
-  "source_signal": "The audience is currently hyper-sensitive to scams and 'hidden fees' as seen in the recent Jane Street and SEBI escrow discussions."
+  "key_statistic": "11-13% cumulative price hike (7-9% Q1 + 3-4% Q2)",
+  "target_emotion": "Outrage at corporate margin extraction and retail investor blind spots",
+  "pinned_comment_text": "Are you paying 12% more for products just so listed companies can show inflated quarterly profits? Comment 'TRUTH' to get our breakdown on real company operating margins vs retail price hikes! \ud83d\udcac\ud83d\udc47",
+  "tamil_adaptation_directive": "Frame the concept around 'Raw Material Inflation Drama'. Use high-energy Tanglish terms like 'Margin Trick', 'Namma Pocket-la Kai Vaikkiranga', and 'FMCG Share Price Trap' to explain how everyday consumers pay double while corporate quarterly reports celebrate profit records.",
+  "source_signal": "HDFC Securities quarterly earnings tracker on input inflation pass-through"
 }
