@@ -101,7 +101,7 @@ class ScriptPayload(BaseModel):
     @field_validator("scenes")
     @classmethod
     def check_scenes(cls, v):
-        lo, hi = (8, 16) if _story_mode() else (6, 9)
+        lo, hi = (7, 10) if _story_mode() else (6, 9)
         if not (lo <= len(v) <= hi):
             raise ValueError(f"Script must have {lo}-{hi} scenes, got {len(v)}")
         scene_ids = [scene.scene_id for scene in v]
