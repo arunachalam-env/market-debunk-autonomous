@@ -41,12 +41,15 @@ def source_all_visuals(scenes: list, output_dir: Path, story_seed: Optional[dict
         sourced = False
         # -- Story Mode: illustrated story frames first ------------------------
         if bool(getattr(settings, "STORY_MODE", False)):
+            from src.agents import story_image_agent
             try:
-                from src.agents import story_image_agent
                 image_path = story_image_agent.generate_scene_image(scene, output_dir)
-            except Exception as story_err:  # noqa: BLE001 - B-roll fallback below
-                image_path = None
-                log.warning("Story image generation errored for scene %d: %s", scene_id, story_err)
+            except story_image_agent.StoryImageUnavailable:
+                raise  # fail-closed: never substitute off-model visuals
+            except Exception as story_err:  # noqa: BLE001 - unexpected errors also halt
+                raise story_image_agent.StoryImageUnavailable(
+                    f"Scene {scene_id}: unexpected story-image error: {story_err}"
+                ) from story_err
             if image_path:
                 visual_paths.append({
                     "scene_id": scene_id,

@@ -3,11 +3,14 @@
 Generates one storybook illustration per scene for the "Arun Stories" format,
 replacing generic stock B-roll with a consistent hand-painted world.
 
-Provider chain (per scene, independent - one failure never kills the run):
-  1. Gemini image models with the locked character sheet as a reference image
-     (best character consistency; key rotation across the existing Gemini keys).
-  2. Pollinations.ai (free, keyless FLUX) with the written character bible.
-  3. Returns None -> visual_agent falls back to the classic Pexels B-roll path.
+Provider policy (per owner decision, 2026-09-27):
+  Gemini image models with the locked character sheet as a reference image are
+  the ONLY acceptable illustration source (best character consistency; key
+  rotation across the existing Gemini keys). Pollinations/stock substitutions
+  were rejected on quality grounds and must never reach a published video.
+  On quota exhaustion or provider failure this agent raises
+  StoryImageUnavailable, failing the run closed so it retries on the next
+  scheduled trigger after quota reset instead of shipping off-model frames.
 """
 from __future__ import annotations
 
@@ -15,7 +18,6 @@ import base64
 import time
 from pathlib import Path
 from typing import Optional
-from urllib.parse import quote
 
 import requests
 
@@ -114,25 +116,20 @@ def _try_gemini_image(prompt: str, sheet_b64: Optional[str], output_path: Path) 
     return False
 
 
-def _try_pollinations(prompt: str, output_path: Path) -> bool:
-    try:
-        url = (
-            "https://image.pollinations.ai/prompt/" + quote(prompt[:1500])
-            + "?width=1080&height=1680&seed=24&nologo=true&model=flux"
-        )
-        res = requests.get(url, timeout=180)
-        ctype = (res.headers.get("Content-Type") or "").lower()
-        if res.status_code == 200 and "image" in ctype and len(res.content) > 10000:
-            output_path.write_bytes(res.content)
-            return True
-        log.info("Pollinations returned HTTP %s (%s)", res.status_code, ctype)
-    except Exception as exc:  # noqa: BLE001
-        log.info("Pollinations image failed: %s", exc)
-    return False
+class StoryImageUnavailable(RuntimeError):
+    """Raised when no acceptable (Gemini + character sheet) image can be produced."""
+
+
+_RETRY_ROUNDS = 3
+_RETRY_SLEEP_SECONDS = 20
 
 
 def generate_scene_image(scene: dict, output_dir: Path) -> Optional[Path]:
-    """Generate one storybook illustration for a scene. Returns None on total failure."""
+    """Generate one storybook illustration for a scene.
+
+    Fail-closed: raises StoryImageUnavailable when Gemini cannot deliver, so the
+    run halts instead of falling back to off-model substitutes.
+    """
     scene_id = scene.get("scene_id", 0)
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / f"scene_{scene_id}.png"
@@ -145,11 +142,16 @@ def generate_scene_image(scene: dict, output_dir: Path) -> Optional[Path]:
 
     prompt = _build_prompt(scene, has_sheet=bool(sheet_b64))
 
-    if _try_gemini_image(prompt, sheet_b64, output_path):
-        log.info("Scene %s story image via Gemini (%d bytes)", scene_id, output_path.stat().st_size)
-        return output_path
-    if _try_pollinations(prompt, output_path):
-        log.info("Scene %s story image via Pollinations (%d bytes)", scene_id, output_path.stat().st_size)
-        return output_path
-    log.warning("Scene %s story image failed on all providers; caller will fall back to B-roll", scene_id)
-    return None
+    for attempt in range(1, _RETRY_ROUNDS + 1):
+        if _try_gemini_image(prompt, sheet_b64, output_path):
+            log.info("Scene %s story image via Gemini (%d bytes)", scene_id, output_path.stat().st_size)
+            return output_path
+        if attempt < _RETRY_ROUNDS:
+            log.info("Scene %s Gemini attempt %d/%d failed; retrying in %ds",
+                     scene_id, attempt, _RETRY_ROUNDS, _RETRY_SLEEP_SECONDS)
+            time.sleep(_RETRY_SLEEP_SECONDS)
+    raise StoryImageUnavailable(
+        f"Scene {scene_id}: Gemini image generation unavailable on all keys/models "
+        f"after {_RETRY_ROUNDS} attempts. Halting run (fail-closed); the next scheduled "
+        f"run retries after quota reset. Off-model substitutes are disabled by owner decision."
+    )

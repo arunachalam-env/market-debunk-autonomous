@@ -51,6 +51,11 @@ jobs:
       - name: Install Bebas Neue Font
         run: |
           mkdir -p ~/.local/share/fonts
+          echo "Downloading Playfair Display (storybook serif) from Google Fonts repository..."
+          curl -fL "https://github.com/google/fonts/raw/main/ofl/playfairdisplay/PlayfairDisplay%5Bwght%5D.ttf" \
+            -o ~/.local/share/fonts/PlayfairDisplay.ttf || true
+          curl -fL "https://github.com/google/fonts/raw/main/ofl/playfairdisplay/PlayfairDisplay-Italic%5Bwght%5D.ttf" \
+            -o ~/.local/share/fonts/PlayfairDisplay-Italic.ttf || true
           if [ -f "assets/fonts/BebasNeue-Regular.ttf" ]; then
             echo "Copying Bebas Neue from repository assets..."
             cp assets/fonts/BebasNeue-Regular.ttf ~/.local/share/fonts/

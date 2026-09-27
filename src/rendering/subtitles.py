@@ -60,6 +60,29 @@ def _ass_header(
     margin_h = settings.SUBTITLE_MARGIN_H
     border_style = 1
 
+    story_mode = bool(getattr(settings, "STORY_MODE", False))
+    if story_mode:
+        # Story Mode: calm storybook typography (owner-approved changeover,
+        # 2026-09-27). Small serif phrase captions at the bottom and a small
+        # italic serif story title at the top, both in warm off-white.
+        serif = "Playfair Display"
+        return (
+            "[Script Info]\n"
+            "ScriptType: v4.00+\n"
+            f"PlayResX: {video_width}\n"
+            f"PlayResY: {video_height}\n"
+            "ScaledBorderAndShadow: yes\n"
+            "YCbCr Matrix: TV.709\n"
+            "WrapStyle: 0\n"
+            "\n"
+            "[V4+ Styles]\n"
+            "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
+            f"Style: Default,{serif},52,&H00F5F0E6,&H00FFFFFF,{outline_color},&H64000000,0,0,0,0,100,100,1,0,{border_style},2,1,{alignment},{margin_h},{margin_h},90,1\n"
+            f"Style: HookBanner,{serif},44,&H00EDE4D0,&H00FFFFFF,{outline_color},&H50000000,0,-1,0,0,100,100,1,0,{border_style},2,1,8,{margin_h},{margin_h},80,1\n"
+            "\n"
+            "[Events]\n"
+            "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
+        )
     return (
         "[Script Info]\n"
         "ScriptType: v4.00+\n"
@@ -134,7 +157,7 @@ def _build_dialogue_lines(
         if story_mode:
             # Story Mode: phrase-level captions, one line per chunk, no karaoke
             # word-highlighting - calm storybook pacing.
-            text = " ".join(w["word"].upper() for w in chunk)
+            text = " ".join(w["word"] for w in chunk)
             lines.append(
                 f"Dialogue: 0,{_fmt_time(chunk_start)},{_fmt_time(chunk_end)},"
                 f"Default,,0,0,0,,{text}"
