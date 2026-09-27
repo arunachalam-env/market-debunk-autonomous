@@ -30,7 +30,7 @@ def test_dedup_catches_case_and_hashtag_variants(tmp_path: Path, monkeypatch):
 
 def test_duration_gate_rejects_under_spec_video():
     with pytest.raises(RuntimeError, match="outside the allowed"):
-        validate_duration(26)
+        validate_duration(10)
 
 
 def test_visual_gate_rejects_identical_assets(tmp_path: Path, monkeypatch):

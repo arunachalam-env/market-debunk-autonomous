@@ -25,6 +25,11 @@ from src.utils.logger import get_logger
 
 log = get_logger(__name__, phase="analytics_sensor")
 
+# Give up retrying a post's metrics fetch after this many pipeline runs.
+# Each run is a new chance for transient API/secret failures to heal, but a
+# permanently broken credential should not keep a post unaudited forever.
+MAX_AUDIT_ATTEMPTS = 5
+
 
 class AnalyticsSensor:
     """Collects 48-hour social metrics and flags underperforming patterns."""
@@ -41,6 +46,30 @@ class AnalyticsSensor:
         self.ledger_path = Path(ledger_path) if ledger_path else data_dir / "publish_ledger.json"
         self.analytics_path = Path(analytics_path) if analytics_path else data_dir / "analytics_ledger.json"
         self.deprecated_path = Path(deprecated_path) if deprecated_path else data_dir / "deprecated_patterns.json"
+
+    @staticmethod
+    def _has_metrics(metrics: Optional[dict]) -> bool:
+        """True only when a platform fetch returned at least one real metric."""
+        return bool(metrics) and any(v not in (None, 0, "") for v in metrics.values())
+
+    def _log_credential_gap_once(self, yt_key_present: bool, ig_token_present: bool) -> None:
+        """One actionable log line per run when metrics fetches are guaranteed to come back empty."""
+        if not yt_key_present:
+            has_oauth = all((
+                getattr(settings, "YT_REFRESH_TOKEN", ""),
+                getattr(settings, "YT_CLIENT_ID", ""),
+                getattr(settings, "YT_CLIENT_SECRET", ""),
+            ))
+            if not has_oauth:
+                log.error(
+                    "YouTube analytics will stay EMPTY: set the YT_API_KEY secret "
+                    "(or all of YT_CLIENT_ID/YT_CLIENT_SECRET/YT_REFRESH_TOKEN) in repo secrets."
+                )
+        if not ig_token_present:
+            log.error(
+                "Instagram analytics will stay EMPTY: set the INSTAGRAM_ACCESS_TOKEN "
+                "(or META_ACCESS_TOKEN) and INSTAGRAM_USER_ID secrets."
+            )
 
     def load_deprecated_patterns(self) -> list[str]:
         """Load list of deprecated hook formulas and underperforming angles."""
@@ -93,8 +122,19 @@ class AnalyticsSensor:
         max_age = timedelta(days=14)
 
         audited_count = 0
+        retried_count = 0
+        failed_count = 0
         deprecated_count = 0
+        state_changed = False
         analytics_records = self._load_analytics_records()
+
+        self._log_credential_gap_once(
+            yt_key_present=bool(getattr(settings, "YT_API_KEY", "").strip())
+            or all((getattr(settings, "YT_REFRESH_TOKEN", ""), getattr(settings, "YT_CLIENT_ID", ""), getattr(settings, "YT_CLIENT_SECRET", ""))),
+            ig_token_present=bool(
+                (getattr(settings, "INSTAGRAM_ACCESS_TOKEN", "") or getattr(settings, "META_ACCESS_TOKEN", "")).strip()
+            ),
+        )
 
         for entry in ledger:
             if entry.get("audited"):
@@ -106,6 +146,8 @@ class AnalyticsSensor:
 
             try:
                 post_dt = datetime.fromisoformat(ts_str)
+                if post_dt.tzinfo is None:
+                    post_dt = post_dt.replace(tzinfo=timezone.utc)
             except Exception:
                 continue
 
@@ -124,6 +166,39 @@ class AnalyticsSensor:
             ig_metrics = self._fetch_instagram_metrics(platform_ids.get("instagram"))
             yt_metrics = self._fetch_youtube_metrics(platform_ids.get("youtube"))
 
+            # Never record an empty audit: if both platforms returned nothing, the
+            # fetch failed (bad/missing secret, quota, network) and the tuner would
+            # learn from a row of zeros. Retry on the next pipeline run instead.
+            if not self._has_metrics(ig_metrics) and not self._has_metrics(yt_metrics):
+                attempts = int(entry.get("audit_attempts", 0)) + 1
+                entry["audit_attempts"] = attempts
+                state_changed = True
+                if attempts < MAX_AUDIT_ATTEMPTS:
+                    retried_count += 1
+                    log.warning(
+                        "Metrics fetch came back empty for '%s' (attempt %d/%d). Will retry next run - NOT recording zeros.",
+                        post_title[:50], attempts, MAX_AUDIT_ATTEMPTS,
+                    )
+                    continue
+                failed_count += 1
+                log.error(
+                    "Giving up on '%s' after %d empty fetches. Recording fetch_failed so the gap is visible.",
+                    post_title[:50], attempts,
+                )
+                entry["audited"] = True
+                analytics_records.append({
+                    "timestamp_audited": now.isoformat(),
+                    "post_timestamp": ts_str,
+                    "title": post_title,
+                    "hook": hook,
+                    "topic": topic,
+                    "duration_seconds": duration,
+                    "status": "fetch_failed",
+                    "instagram": {},
+                    "youtube": {},
+                })
+                continue
+
             record = {
                 "timestamp_audited": now.isoformat(),
                 "post_timestamp": ts_str,
@@ -131,11 +206,13 @@ class AnalyticsSensor:
                 "hook": hook,
                 "topic": topic,
                 "duration_seconds": duration,
+                "status": "ok",
                 "instagram": ig_metrics,
                 "youtube": yt_metrics,
             }
             analytics_records.append(record)
             entry["audited"] = True
+            state_changed = True
             audited_count += 1
 
             # Performance gate evaluation
@@ -159,17 +236,25 @@ class AnalyticsSensor:
                 )
                 deprecated_count += 1
 
-        # Save updated ledger with audited flags
-        if audited_count > 0:
+        # Save updated ledger with audited flags / retry counters
+        if state_changed:
             try:
                 with open(self.ledger_path, "w", encoding="utf-8") as f:
                     json.dump(ledger, f, indent=2, ensure_ascii=False)
                 self._save_analytics_records(analytics_records)
-                log.info("✓ Completed 48h audit: %d posts analyzed, %d patterns deprecated.", audited_count, deprecated_count)
+                log.info(
+                    "✓ Completed 48h audit: %d posts analyzed, %d retrying, %d fetch-failed, %d patterns deprecated.",
+                    audited_count, retried_count, failed_count, deprecated_count,
+                )
             except Exception as exc:
                 log.error("Failed to save audit results: %s", exc)
 
-        return {"audited": audited_count, "deprecated_added": deprecated_count}
+        return {
+            "audited": audited_count,
+            "retrying": retried_count,
+            "fetch_failed": failed_count,
+            "deprecated_added": deprecated_count,
+        }
 
     def _load_analytics_records(self) -> list[dict]:
         if not self.analytics_path.is_file():

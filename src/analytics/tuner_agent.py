@@ -51,6 +51,22 @@ class PerformanceTuningAgent:
             log.warning("Could not read analytics ledger: %s", exc)
             return []
 
+    @staticmethod
+    def _has_real_metrics(record: dict) -> bool:
+        """True only when an audit row carries at least one real platform metric.
+
+        Rows written before the analytics-sensor fix (and rows marked
+        "fetch_failed") have empty instagram/youtube dicts - counting them made
+        the tuner "learn" from zeros.
+        """
+        if record.get("status") == "fetch_failed":
+            return False
+        for platform in ("instagram", "youtube"):
+            metrics = record.get(platform) or {}
+            if any(v not in (None, 0, "") for v in metrics.values()):
+                return True
+        return False
+
     def load_publish_ledger(self) -> list[dict]:
         """Load published video metadata."""
         if not self.publish_path.is_file():
@@ -79,20 +95,31 @@ class PerformanceTuningAgent:
         Updates data/tuning_playbook.json.
         """
         records = self.load_analytics_records()
-        log.info("Running Performance Tuning Agent across %d historical analytics records...", len(records))
+        usable = [r for r in records if self._has_real_metrics(r)]
+        empty_rows = len(records) - len(usable)
+        log.info(
+            "Running Performance Tuning Agent across %d historical analytics records (%d usable, %d empty/failed ignored)...",
+            len(records), len(usable), empty_rows,
+        )
 
-        # Baseline defaults if insufficient live data yet
-        if len(records) < 2:
-            log.info("Insufficient historical records (< 2) for deep synthesis; using calibrated baseline playbook.")
+        # Baseline defaults until we have REAL metrics. Empty audit rows must never
+        # steer the playbook - that was the "learning from nothing" bug.
+        if len(usable) < 2:
+            log.warning(
+                "Only %d usable analytics record(s) with real metrics (< 2); keeping calibrated baseline playbook. "
+                "Fix the analytics credentials (see sensor logs) so the loop can start learning.",
+                len(usable),
+            )
             playbook = self._default_playbook()
             playbook["last_updated"] = datetime.now(timezone.utc).isoformat()
-            playbook["analyzed_videos_count"] = len(records)
+            playbook["analyzed_videos_count"] = len(usable)
+            playbook["data_status"] = "waiting_for_real_analytics"
             self._save_playbook(playbook)
             return playbook
 
         # Rank videos by composite viral engagement score
         scored_videos = []
-        for r in records:
+        for r in usable:
             ig = r.get("instagram", {})
             yt = r.get("youtube", {})
             views = yt.get("views", 0) or ig.get("reach", 0) or 1
@@ -128,7 +155,8 @@ class PerformanceTuningAgent:
 
         playbook = {
             "last_updated": datetime.now(timezone.utc).isoformat(),
-            "analyzed_videos_count": len(records),
+            "analyzed_videos_count": len(usable),
+            "data_status": "learning_from_real_analytics",
             "optimal_runtime_seconds": calibrated_duration,
             "optimal_word_count": calibrated_words,
             "top_performing_topics": synthesized_insights.get("top_topics", ["hidden charges", "EMI trap", "F&O lot size margin traps", "credit card tricks"]),
