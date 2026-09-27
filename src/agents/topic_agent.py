@@ -618,10 +618,11 @@ TRANSCRIPT:
 
 Your task: Extract a story seed to be turned into a cinematic, entertaining, satirical short-form video about finance.
 
-TONE & SATIRICAL DEBUNK DIRECTIVE:
-- Frame the story with biting satire, irony, and sharp cynicism: expose the sheer absurdity of the financial trap or marketing gimmick.
-- Make institutions, banks, or predatory brokers look ridiculous by exposing their hidden math with undeniable facts.
-- Avoid boring textbook explainer language. The viewer should feel shocked and amused by how clever and brazen the trap is.
+TONE & FACT-FIRST FRAMING DIRECTIVE:
+- Facts first: identify what the source facts actually show and let the framing follow them naturally - never force a debunk angle.
+- If the source reveals a genuine trap, mismatch, or gimmick, frame it with biting satire and irony, backed by undeniable facts.
+- If the facts show the popular claim actually holds up, frame the story as a sharp, surprising explainer instead - no manufactured outrage.
+- Avoid boring textbook explainer language. The viewer should feel the story is clever, surprising, and worth sharing.
 - The thesis must be provocative, witty, but completely defensible.
 - The story_seed should give the script agent concrete props and relatable everyday consumer situations.
 

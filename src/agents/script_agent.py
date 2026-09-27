@@ -223,6 +223,7 @@ TARGET RUNTIME: 22–26 seconds total. 50–70 narration words across all 6 scen
 
 ACCURACY & FORMAT MANDATE (NON-NEGOTIABLE):
 • Every number, date, regulation, and company/investor fact in the script must be REAL and verifiable. Never invent or inflate statistics - a fact-check gate blocks publishing on any refuted or unverifiable claim.
+• FACT-FIRST FRAMING: never force a debunk angle. If the sourced facts show the popular claim is false or exaggerated, expose it hard; if the claim checks out, explain it straight and skip the outrage. The angle follows the verified facts, never the other way around.
 • TRACEABILITY RULE: a specific number, percentage, or rupee amount may appear in the narration ONLY if it is present in this video's thesis, story seed, or supplied source material. If the source gives no figure, make the point qualitatively ("a double-digit jump", "a steep hike") and NEVER fabricate a figure or attribute it to unnamed "reports", "studies", "trackers", or "experts" - the fact-check gate cannot verify phantom citations and will block the video.
 • When the topic names a famous investor (Buffett, Munger, Jhunjhunwala, Kedia, Damani, Pabrai, Lynch) or a specific listed stock, anchor the script on that real story - audiences engage with named people and real stocks, not abstract warnings.
 • All visuals are licensed stock clips or AI-generated images. Never write visual prompts requiring third-party footage, news clips, or real footage of any person.
