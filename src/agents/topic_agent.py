@@ -566,6 +566,34 @@ def _download_transcript_ytdlp(video_id: str, cookies_path: Optional[str] = None
 #  Story Seed Extraction (Gemini Summarization — NEW)
 # ──────────────────────────────────────────────────────────────────────────────
 
+
+_FIGURE_RE = re.compile(r"\d[\d,]*(?:\.\d+)?\s*(?:%|percent|per\s*cent|₹|rs\.?|lakhs?|crores?|k)?", re.IGNORECASE)
+
+
+def _seed_figure_violations(result: dict, source_text: str) -> list:
+    """Numeric tokens in the seed that do not appear in the source text.
+
+    The fact-check gate keeps catching LLM-invented statistics; this is the
+    deterministic counterpart to the prompt-side traceability rule.
+    """
+    src = source_text.lower().replace(",", "")
+    fields = [str(result.get("thesis", ""))]
+    seed = result.get("story_seed")
+    if isinstance(seed, dict):
+        fields += [str(v) for v in seed.values()]
+    bad = []
+    for field in fields:
+        for m in _FIGURE_RE.finditer(field.lower()):
+            token = m.group(0).strip()
+            dm = re.match(r"\d[\d,]*(?:\.\d+)?", token)
+            if not dm:
+                continue
+            digits = dm.group(0).replace(",", "").rstrip(".")
+            if digits and digits not in src:
+                bad.append(token)
+    return sorted(set(bad))
+
+
 def summarize_to_story_seed(raw_transcript: str, video_title: str = "") -> dict:
     """
     Pipes the raw (possibly Tamil/Hinglish) transcript through Gemini
@@ -617,56 +645,80 @@ Output ONLY a valid JSON object with exactly these keys (all values in English):
 
 Output ONLY the JSON. No explanation, no preamble, no markdown fences."""
 
-    # Call AI API (Gemma primary, Gemini flash fallback) using API keys
-    from src.agents.script_agent import _get_api_clients
-    clients = _get_api_clients()
-    models = ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.1-flash-lite", "gemini-flash-lite-latest"]
+    def _extract_seed(active_prompt: str) -> Optional[dict]:
+        """One extraction pass over the Gemini ladder, then the Groq fallback."""
+        # Call AI API (Gemma primary, Gemini flash fallback) using API keys
+        from src.agents.script_agent import _get_api_clients
+        clients = _get_api_clients()
+        models = ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.1-flash-lite", "gemini-flash-lite-latest"]
 
-    for model_name in models:
-        for client in clients:
+        for model_name in models:
+            for client in clients:
+                try:
+                    cfg = {"temperature": 0.70}
+                    if "gemini" in model_name:
+                        cfg["response_mime_type"] = "application/json"
+                    response = client.models.generate_content(
+                        model=model_name,
+                        contents=active_prompt,
+                        config=cfg,
+                    )
+                    raw_json = response.text.strip()
+                    if "```" in raw_json:
+                        raw_json = re.sub(r"^```(?:json)?\s*", "", raw_json, flags=re.MULTILINE)
+                        raw_json = re.sub(r"\s*```\s*$", "", raw_json, flags=re.MULTILINE)
+                    result = json.loads(raw_json)
+                    log.info("AI story seed extracted via %s | concept: %s | thesis: %s",
+                             model_name,
+                             result.get("story_seed", {}).get("concept_name", "?"),
+                             result.get("thesis", "?"))
+                    return result
+                except Exception as exc:
+                    log.debug("Story seed extraction with %s failed: %s", model_name, exc)
+                    continue
+
+        # Groq fallback
+        if settings.GROQ_API_KEY:
             try:
-                cfg = {"temperature": 0.70}
-                if "gemini" in model_name:
-                    cfg["response_mime_type"] = "application/json"
-                response = client.models.generate_content(
-                    model=model_name,
-                    contents=prompt,
-                    config=cfg,
+                from groq import Groq
+                client = Groq(api_key=settings.GROQ_API_KEY)
+                completion = client.chat.completions.create(
+                    model=settings.GROQ_FALLBACK_MODEL,
+                    messages=[{"role": "user", "content": active_prompt}],
+                    max_tokens=600,
+                    temperature=0.7,
                 )
-                raw_json = response.text.strip()
+                raw_json = completion.choices[0].message.content.strip()
                 if "```" in raw_json:
                     raw_json = re.sub(r"^```(?:json)?\s*", "", raw_json, flags=re.MULTILINE)
                     raw_json = re.sub(r"\s*```\s*$", "", raw_json, flags=re.MULTILINE)
                 result = json.loads(raw_json)
-                log.info("AI story seed extracted via %s | concept: %s | thesis: %s",
-                         model_name,
-                         result.get("story_seed", {}).get("concept_name", "?"),
-                         result.get("thesis", "?"))
+                log.info("Groq story seed: %s", result.get("thesis", "?"))
                 return result
             except Exception as exc:
-                log.debug("Story seed extraction with %s failed: %s", model_name, exc)
-                continue
+                log.error("Groq story seed extraction also failed: %s", exc)
+        return None
 
-    # Groq fallback
-    if settings.GROQ_API_KEY:
-        try:
-            from groq import Groq
-            client = Groq(api_key=settings.GROQ_API_KEY)
-            completion = client.chat.completions.create(
-                model=settings.GROQ_FALLBACK_MODEL,
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=600,
-                temperature=0.7,
+    # Deterministic traceability enforcement: figures in the seed must exist in
+    # the source text. One corrected regeneration, then a figure-free fallback.
+    result = _extract_seed(prompt)
+    if result is not None:
+        violations = _seed_figure_violations(result, raw_transcript)
+        if violations:
+            log.warning("Story seed invented figures not in source %s; regenerating once with correction.", violations)
+            corrected_prompt = prompt + (
+                "\n\nCORRECTION: your previous output contained these figures that do NOT "
+                "appear in the source text: " + ", ".join(violations) + ". Regenerate the "
+                "JSON WITHOUT any of them (and without close paraphrases of them); describe "
+                "magnitudes qualitatively instead."
             )
-            raw_json = completion.choices[0].message.content.strip()
-            if "```" in raw_json:
-                raw_json = re.sub(r"^```(?:json)?\s*", "", raw_json, flags=re.MULTILINE)
-                raw_json = re.sub(r"\s*```\s*$", "", raw_json, flags=re.MULTILINE)
-            result = json.loads(raw_json)
-            log.info("Groq story seed: %s", result.get("thesis", "?"))
-            return result
-        except Exception as exc:
-            log.error("Groq story seed extraction also failed: %s", exc)
+            retry = _extract_seed(corrected_prompt)
+            if retry is not None and not _seed_figure_violations(retry, raw_transcript):
+                return retry
+            log.warning("Seed still untraceable after correction; falling back to title-based seed.")
+            result = None
+    if result is not None:
+        return result
 
     # Dynamic fallback derived purely from the real video title (no static templates)
     clean_title = " ".join(video_title.split()).strip()

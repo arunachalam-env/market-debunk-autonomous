@@ -46,7 +46,7 @@ class Settings:
 
     # Groq Fallback
     GROQ_API_KEY: str = _get("GROQ_API_KEY", required=False) or ""
-    GROQ_FALLBACK_MODEL: str = _get("GROQ_FALLBACK_MODEL", required=False) or "llama3-8b-8192"
+    GROQ_FALLBACK_MODEL: str = _get("GROQ_FALLBACK_MODEL", required=False) or "openai/gpt-oss-120b"
 
     # ── Transcript provider & Dedicated Market APIs ───────────────
     RAPIDAPI_KEY: str = _get("RAPIDAPI_KEY", required=False) or ""

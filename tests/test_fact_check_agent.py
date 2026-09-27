@@ -339,3 +339,46 @@ def test_unparseable_then_valid_recovers(monkeypatch):
     result = agent.check_script({"scenes": [{"narration": "prices are rising fast"}]}, thesis="t")
     assert result.check_ran is True
     assert result.passed is True
+
+
+def test_groq_grounded_candidate_runs_first_when_key_set(monkeypatch):
+    """With GROQ_API_KEY configured, the gate tries grounded Groq before Gemini."""
+    import groq as groq_mod
+    from src.utils.config import settings
+    monkeypatch.setattr(settings, "GROQ_API_KEY", "test-groq-key")
+    agent = FactCheckAgent()
+    calls = []
+
+    class FakeMsg:
+        content = '{"claims": [{"claim": "x", "verdict": "SUPPORTED", "reason": "ok"}]}'
+
+    class FakeChoice:
+        message = FakeMsg()
+
+    class FakeResp:
+        choices = [FakeChoice()]
+
+    class FakeCompletions:
+        def create(self, **kwargs):
+            calls.append(kwargs)
+            return FakeResp()
+
+    class FakeChat:
+        completions = FakeCompletions()
+
+    class FakeGroq:
+        chat = FakeChat()
+
+    monkeypatch.setattr(groq_mod, "Groq", lambda api_key=None: FakeGroq())
+
+    raw = agent._verify_with_grounded_model("Prices are rising", "t")
+    assert "SUPPORTED" in raw
+    assert calls and calls[0]["model"] == "openai/gpt-oss-120b"
+    assert calls[0]["tools"] == [{"type": "browser_search"}]
+
+
+def test_parse_tolerates_prose_around_json():
+    from src.agents.fact_check_agent import parse_verdict_response
+    raw = 'Based on sources 【3L10-L12】, here is the verdict: {"claims": [{"claim": "c", "verdict": "SUPPORTED", "reason": "r"}]} - end.'
+    claims = parse_verdict_response(raw)
+    assert claims and claims[0]["verdict"] == "SUPPORTED"

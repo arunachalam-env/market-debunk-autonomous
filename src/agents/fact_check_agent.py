@@ -41,6 +41,12 @@ FACT_CHECK_MODEL_FALLBACKS = ("gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.
 # apply (UNVERIFIABLE blocks). If Gemma errors out, the gate fails closed.
 GEMMA_FACT_CHECK_FALLBACKS = ("gemma-4-31b-it", "gemma-4-26b-a4b-it")
 
+# Groq free tier (openai/gpt-oss-120b, 1000 req/day) with the server-side
+# browser_search tool gives the gate a grounded non-Google path. When a
+# GROQ_API_KEY is configured it is tried FIRST so the scarce Gemini quota is
+# preserved for the writer stages.
+GROQ_FACT_CHECK_MODEL = "openai/gpt-oss-120b"
+
 # Backoff before retrying a transient error or empty response on the same model/key.
 _TRANSIENT_BACKOFF_S = 15
 
@@ -78,7 +84,8 @@ class FactCheckResult:
 
 
 def parse_verdict_response(raw_text: str) -> list[dict]:
-    """Parse the model's JSON verdict list. Tolerates markdown fences."""
+    """Parse the model's JSON verdict list. Tolerates markdown fences and
+    prose/citation markers around the JSON object (grounded Groq answers)."""
     text = (raw_text or "").strip()
     if text.startswith("```"):
         # strip ```json ... ``` fences
@@ -86,7 +93,14 @@ def parse_verdict_response(raw_text: str) -> list[dict]:
         if text.endswith("```"):
             text = text[: text.rfind("```")]
         text = text.strip()
-    data = json.loads(text)
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        start = text.find("{")
+        end = text.rfind("}")
+        if start == -1 or end <= start:
+            raise
+        data = json.loads(text[start : end + 1])
     if isinstance(data, dict):
         data = data.get("claims", [])
     if not isinstance(data, list):
@@ -174,7 +188,7 @@ class FactCheckAgent:
             or getattr(settings, "LLM_API_KEYS", "")
         )
         api_keys = [k.strip() for k in keys_str.split(",") if k.strip()]
-        if not api_keys:
+        if not api_keys and not getattr(settings, "GROQ_API_KEY", ""):
             raise RuntimeError("no Gemini API key available for fact-checking")
         prompt = f"""You are a meticulous financial fact-checker for an Indian retail-investor Shorts channel.
 
@@ -195,13 +209,20 @@ Return strict JSON only:
 
         candidates = [self.model] + [m for m in FACT_CHECK_MODEL_FALLBACKS if m != self.model]
         candidates += [m for m in GEMMA_FACT_CHECK_FALLBACKS if m not in candidates]
+        if getattr(settings, "GROQ_API_KEY", ""):
+            candidates = ["groq:" + GROQ_FACT_CHECK_MODEL] + candidates
         last_exc: Optional[Exception] = None
         for candidate in candidates:
-            for key_index, api_key in enumerate(api_keys):
-                client = genai.Client(api_key=api_key)
+            for key_index, api_key in enumerate(api_keys or [None]):
+                if candidate.startswith("groq:") and key_index > 0:
+                    break  # single Groq key: don't retry it once per Gemini key
                 for attempt in (1, 2):
                     try:
-                        text, grounded = self._generate_checked(client, candidate, prompt, types)
+                        if candidate.startswith("groq:"):
+                            text, grounded = self._generate_with_groq(candidate[5:], prompt)
+                        else:
+                            client = genai.Client(api_key=api_key)
+                            text, grounded = self._generate_checked(client, candidate, prompt, types)
                         if text:
                             if candidate != self.model or key_index > 0:
                                 log.warning(
@@ -282,4 +303,39 @@ Return strict JSON only:
                 log.warning("Model %s rejects search grounding; retrying ungrounded.", candidate)
                 response = _call(False, prompt + _UNGROUNDED_SUFFIX)
                 return (response.text if response else None), False
+            raise
+
+    @staticmethod
+    def _generate_with_groq(model: str, prompt: str):
+        """Groq path: server-side browser_search grounding on gpt-oss-120b.
+
+        Returns (text, grounded). If the account/model rejects the tool,
+        retries ungrounded with the strict-knowledge suffix (gate stays
+        fail-closed: uncertain claims become UNVERIFIABLE).
+        """
+        from groq import Groq
+
+        client = Groq(api_key=settings.GROQ_API_KEY)
+
+        def _call(grounded: bool, text: str):
+            kwargs = dict(
+                model=model,
+                messages=[{"role": "user", "content": text}],
+                temperature=0.1,
+                max_tokens=3000,
+            )
+            if grounded:
+                kwargs["tools"] = [{"type": "browser_search"}]
+            return client.chat.completions.create(**kwargs)
+
+        try:
+            resp = _call(True, prompt)
+            content = resp.choices[0].message.content if resp and resp.choices else None
+            return content, True
+        except Exception as exc:
+            if _tool_unsupported(str(exc)) or "tool" in str(exc).lower():
+                log.warning("Groq model %s rejects browser search; retrying ungrounded.", model)
+                resp = _call(False, prompt + _UNGROUNDED_SUFFIX)
+                content = resp.choices[0].message.content if resp and resp.choices else None
+                return content, False
             raise

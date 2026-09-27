@@ -38,3 +38,4 @@ tenacity>=8.2.0                    # ── Script Generation ──
 google-generativeai>=0.8.2  # Gemini API for script & image generation
 google-cloud-aiplatform>=1.60.0
 google-cloud-texttospeech
+groq>=1.0
