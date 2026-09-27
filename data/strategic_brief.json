@@ -1,12 +1,12 @@
 {
-  "topic_thesis": "Your favorite brands are using 'inflation' as a convenient mask to hike prices by 13% while secretly padding their profit margins at your expense.",
-  "strategic_angle": "Expose the 'Inflation Smoke Screen' strategy where companies hike prices significantly beyond input cost increases to engineer artificial margin expansion, effectively taxing the consumer to inflate stock valuations.",
+  "topic_thesis": "Warren Buffett didn't buy Nebraska Furniture Mart for the sofas; he bought it to use your customer deposits as an interest-free loan to gamble on the stock market.",
+  "strategic_angle": "Expose the 'Float Utilization' mechanism, revealing that every time a consumer finances a purchase, they are effectively providing the retailer's parent company with cost-free capital to fuel institutional-grade investments while the consumer pays interest.",
   "format_type": "STANDALONE",
   "hook_style": "HARD_NUMBER_SHOCK",
   "hook_type": "LOSS_IMPLICATION",
-  "key_statistic": "13% total price hike / 7-9% Q1 + 4% Q2",
-  "target_emotion": "Indignation and financial vigilance",
-  "pinned_comment_text": "Are you paying 13% more for the same product while the company reports record profits? Tell us which brand hit your wallet hardest this quarter, or comment 'GUIDE' to learn how to spot 'Shrinkflation' and price-gouging before you buy. \ud83d\udcac\ud83d\udc47",
-  "tamil_adaptation_directive": "Use a tone of 'Kashu mela kashu' (money over money) greed. Use phrases like 'Price hike-nu solli nammala epdi emathuranga' (How they fool us by saying price hike) and 'Company profit-a namma pocket-la irundhu edukuranga' (They take company profit from our pockets). Focus on how the middle-class 'Budget collapse' is actually a planned corporate strategy.",
-  "source_signal": "Consumer purchasing power erosion & HDFC Securities Q1FY27 Tracker"
+  "key_statistic": "100% of the float is reinvested; customers pay 15-20% APR on furniture while the retailer earns compound interest on the cash flow.",
+  "target_emotion": "Indignation and realization of being a pawn in a larger capital machine.",
+  "pinned_comment_text": "Are you paying interest to a billionaire while they invest your money for themselves? Type 'GUIDE' if you want our breakdown on how to spot these 'Float Traps' in your own bank statements. \ud83d\udcac\ud83d\udc47",
+  "tamil_adaptation_directive": "Use the term 'Interest-Free Loan Trap'. Explain that when people buy on EMI, the shop owner isn't just selling a product, they are using the cash flow to play 'Sattai' (gambling/betting) in the market. Use phrases like 'Bank Manager pesura pechu' and 'Namma paisa, avan growth'.",
+  "source_signal": "The audience is currently hyper-sensitive to scams and 'hidden fees' as seen in the recent Jane Street and SEBI escrow discussions."
 }
