@@ -1,12 +1,12 @@
 {
-  "topic_thesis": "Raising a child in urban India has turned into a financial trap where 12% education inflation silently liquidates your retirement portfolio before your kid even gets a degree.",
-  "strategic_angle": "Expose basic parenting in urban India as a negative-yield financial commitment: private school fees and coaching hubs inflate at double the official consumer inflation rate (11.5% vs 6%), quietly forcing middle-class parents to cannibalize their stock portfolio compounding to fund basic schooling.",
+  "topic_thesis": "Your 'free' UPI convenience is a ticking time bomb designed to hook you into a permanent transaction tax once the user acquisition phase ends.",
+  "strategic_angle": "Expose the 'Burn Rate' trap: Companies are currently losing money on every single UPI transaction to buy your loyalty, but the moment they flip the switch to profitability, you will be paying a 'convenience fee' on every coffee and grocery bill, effectively turning a free service into a regressive tax on the middle class.",
   "format_type": "STANDALONE",
   "hook_style": "HARD_NUMBER_SHOCK",
   "hook_type": "LOSS_IMPLICATION",
-  "key_statistic": "12% education inflation vs 6% CPI / \u20b91 Crore total cost per child from playgroup to graduation",
-  "target_emotion": "Cynical shock and urgent urge to re-evaluate retirement SIP math against school fee spikes",
-  "pinned_comment_text": "Are private school fee hikes silently destroying your retirement SIPs? Drop your monthly fee numbers below, or comment 'CALCULATOR' for our Child Education Inflation Sheet! \ud83d\udcc9\ud83d\udc47",
-  "tamil_adaptation_directive": "Target middle-class parents in Chennai and Coimbatore dealing with private school 'donation' fees and fee hikes. Use sharp Tanglish terms like 'School Fee Loot', 'SIP Budget Out', and 'Retirement Life Gaali' to show how private schooling erodes compounding equity returns.",
-  "source_signal": "ZERO1 BY ZERODHA - Can Indian Parents afford to raise a kid in India? (youtube:EUhOrRbQcJY)"
+  "key_statistic": "1.1% to 2% MDR (Merchant Discount Rate) potential cost shift to consumers",
+  "target_emotion": "Shock and immediate urge to check personal accounts",
+  "pinned_comment_text": "Are you ready to pay a 'convenience fee' for every UPI scan? Or are you already seeing hidden charges? Drop your bank name below if you've been charged, or comment 'GUIDE' to learn how to track your hidden transaction costs! \ud83d\udcac\ud83d\udc47",
+  "tamil_adaptation_directive": "Focus on the 'Free-ah koduthu pazhakkiranga' (habitual freebie) trap. Use terms like 'UPI charge aabathu', 'Bank manager sonna nambaatheenga', and 'Cashless-nu solli kaasu parikkiranga'. Break down the math into how much a family of four loses monthly if a 1% fee is applied to daily grocery expenses.",
+  "source_signal": "Consumer anxiety regarding fintech profitability and potential UPI transaction charges"
 }
