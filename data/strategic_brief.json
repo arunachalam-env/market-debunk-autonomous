@@ -1,12 +1,12 @@
 {
-  "topic_thesis": "Obsessing over finding a single 'magic stock' like ITC or blindly prepaying cheap home loan debt while ignoring asset allocation erodes millions in long-term wealth.",
-  "strategic_angle": "Expose the middle-class emotional trap of chasing single-asset hype or rushing to prepay an 8.5% home loan, revealing how a misallocated portfolio in post-COVID inflation loses millions compared to a structured equity-debt-gold rebalancing framework.",
+  "topic_thesis": "Trading gurus sell candlestick patterns as a science, but reading charts to predict short-term market direction is just expensive astrology where 93% of retail traders lose money.",
+  "strategic_angle": "Expose the Technical Analysis fallacy promoted by course sellers: candlestick patterns (Doji, Hammer, Head & Shoulders) have no statistical edge over a coin flip once brokerage, slippage, and STT are accounted for. Reveal SEBI's hard data showing \u20b91.81 Lakh Crore lost by retail traders while course creators profit purely on subscription fees.",
   "format_type": "STANDALONE",
   "hook_style": "HARD_NUMBER_SHOCK",
-  "hook_type": "LOSS_IMPLICATION",
-  "key_statistic": "\u20b942,00,000 net wealth gap created over 20 years by aggressively prepaying 8.5% home loans instead of disciplined equity-gold asset allocation",
-  "target_emotion": "Shock and immediate urgency to audit current asset allocation and loan prepayments",
-  "pinned_comment_text": "Are you dumping all your savings into one 'hot' stock or rushing to prepay cheap home debt without an asset allocation plan? Drop your portfolio split below, or comment 'GUIDE' for our step-by-step Asset Allocation checklist! \ud83d\udcac\ud83d\udc47",
-  "tamil_adaptation_directive": "Localize using Anand Srinivasan's signature reality check for middle-class Chennai households. Use Tanglish concepts like 'Sontham Veedu Emotional Trap', 'ITC Share Price Mystery', and 'Gold vs Equity Allocation'. Compare prepaying 8.5% Home Loan vs investing in index funds with exact math in lakhs.",
-  "source_signal": "Anand Srinivasan / Money Pechu analysis on post-COVID decision fatigue and Home Loan vs Stock vs Gold allocation dynamics"
+  "hook_type": "MYTH_BUST",
+  "key_statistic": "93% retail loss rate / \u20b91.81 Lakh Crore lost (SEBI F&O Study FY22-FY24)",
+  "target_emotion": "Cynical realization and protective skepticism against trading courses and chart prediction gimmicks",
+  "pinned_comment_text": "Do you believe candlestick charts actually predict tomorrow's price, or is it pure astrology? Comment 'TRUTH' to get our breakdown on why technical indicators fail retail traders! \ud83d\udcac\ud83d\udc47",
+  "tamil_adaptation_directive": "Localize for Tamil retail audiences lured by 'Share Market Classes' and Telegram tips. Use punchy Tanglish terms like 'Candlestick Jothidam', 'Buy-aa Sell-aa Nu Guessing Game', 'Course Fee Trap', and cite SEBI-in 93% Loss Report to dismantle the dream of overnight trading riches.",
+  "source_signal": "Audience pain-point & market trend"
 }
