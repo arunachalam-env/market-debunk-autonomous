@@ -15,7 +15,7 @@ from __future__ import annotations
 import json
 import re
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from src.utils.config import settings
 from src.utils.logger import get_logger
@@ -29,6 +29,16 @@ from src.utils.youtube_titles import (
 log = get_logger(__name__, phase="seo_distribution")
 
 
+def _cap_hashtags(tags: list[str], cap: int, platform: str) -> list[str]:
+    """LLM outputs routinely ignore the 'exactly N hashtags' instruction; cap
+    deterministically. Hashtag stuffing (>5) is near-decorative on Shorts and
+    reads as spam on Reels."""
+    if len(tags) > cap:
+        log.warning("%s hashtags over cap (%d > %d); trimming to the first %d.", platform, len(tags), cap, cap)
+        return tags[:cap]
+    return tags
+
+
 class YouTubeDistribution(BaseModel):
     title: str = Field(description="Search-first, high-reach keyword-frontloaded YouTube Short title. Max 55 chars. Ends with #Shorts.")
     snippet: str = Field(description="First 150 characters of description. Natural SEO search query paragraph.")
@@ -36,6 +46,11 @@ class YouTubeDistribution(BaseModel):
     hashtags: list[str] = Field(description="Exactly 3-5 high volume search hashtags.")
     search_tags: list[str] = Field(description="8-12 search keyword phrases for backend tags.")
     pinned_comment: str = Field(description="Provocative question to seed immediate comment velocity.")
+
+    @field_validator("hashtags")
+    @classmethod
+    def _cap_yt_hashtags(cls, v):
+        return _cap_hashtags(v, 5, "YouTube")
 
 
 class InstagramDistribution(BaseModel):
@@ -45,12 +60,22 @@ class InstagramDistribution(BaseModel):
     comment_trigger: str = Field(description="Comment CTA trigger (e.g. '💬 Comment GUIDE below for the full breakdown').")
     hashtags: list[str] = Field(description="Exactly 4 hyper-targeted niche hashtags.")
 
+    @field_validator("hashtags")
+    @classmethod
+    def _cap_ig_hashtags(cls, v):
+        return _cap_hashtags(v, 4, "Instagram")
+
 
 class FacebookDistribution(BaseModel):
     story_hook: str = Field(description="Conversational storytelling narrative opening (everyday investor dilemma).")
     narrative_body: str = Field(description="100-180 words relatable explanation of what really happens.")
     discussion_question: str = Field(description="Open-ended debate question that triggers comments.")
     topic_tags: list[str] = Field(description="3-4 topic hashtags.")
+
+    @field_validator("topic_tags")
+    @classmethod
+    def _cap_fb_tags(cls, v):
+        return _cap_hashtags(v, 4, "Facebook")
 
 
 class TelegramDistribution(BaseModel):
