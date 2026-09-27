@@ -24,13 +24,25 @@ from src.utils.youtube_titles import normalize_youtube_title
 
 log = get_logger(__name__, phase="youtube_upload")
 
-_DESCRIPTION_FOOTER = (
-    "💬 Comment 'GUIDE' below for the complete breakdown & checklist!\n\n"
-    "Subscribe for daily market myth-busting.\n\n"
-    "Ask your market doubts on Telegram:\n"
-    "English: https://t.me/MarketDebunk\n"
-    "Tamil: https://t.me/marketdebunk_tamil"
-)
+_FOOTER_VARIANTS = [
+    "Subscribe for daily market myth-busting.",
+    "Daily market myths, checked against the facts. Subscribe.",
+    "One market claim checked every day. Subscribe for the next one.",
+]
+
+
+def _description_footer() -> str:
+    """Rotate the footer subscribe line daily: identical boilerplate on every
+    upload is one of the template-sameness signals YouTube throttles."""
+    from datetime import date
+    line = _FOOTER_VARIANTS[date.today().toordinal() % len(_FOOTER_VARIANTS)]
+    return (
+        "💬 Comment 'GUIDE' below for the complete breakdown & checklist!\n\n"
+        f"{line}\n\n"
+        "Ask your market doubts on Telegram:\n"
+        "English: https://t.me/MarketDebunk\n"
+        "Tamil: https://t.me/marketdebunk_tamil"
+    )
 
 
 def _get_authenticated_service():
@@ -84,7 +96,7 @@ def upload_video(
         tags = [h.lstrip("#") for h in hashtags][:15]
 
         # Full description with CTA, Telegram links, and hashtags appended.
-        full_description = f"{description}\n\n{_DESCRIPTION_FOOTER}\n\n" + " ".join(f"#{t}" for t in tags)
+        full_description = f"{description}\n\n{_description_footer()}\n\n" + " ".join(f"#{t}" for t in tags)
 
         request_body = {
             "snippet": {

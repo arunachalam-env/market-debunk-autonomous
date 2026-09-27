@@ -116,7 +116,11 @@ class ScriptPayload(BaseModel):
             for phrase in ["save this", "share this", "don't get trapped", "stay alert", "comment", "subscribe"]
         )
         if not has_cta:
-            cta_phrase = "Save this."
+            # Rotate the fallback sign-off by day so consecutive videos don't
+            # share the identical closing words (template-sameness throttle).
+            from datetime import date
+            cta_options = ["Save this.", "Share this.", "Don't get trapped.", "Stay alert."]
+            cta_phrase = cta_options[date.today().toordinal() % len(cta_options)]
             sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", narration) if s.strip()]
             if len(sentences) > 1 and len(narration.split()) > 8:
                 last_scene.narration = f"{sentences[0]} {cta_phrase}"

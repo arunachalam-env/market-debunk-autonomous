@@ -196,7 +196,7 @@ class PerformanceTuningAgent:
 
         return (
             f"\n\nALGORITHMIC TUNING PLAYBOOK (Continuous Loop Analytics Guidance):\n"
-            f"Target Runtime: ~{duration:.0f}s | Target Narration Words: {words} words total across 6 scenes.\n"
+            f"Target Runtime: ~{duration:.0f}s | Target Narration Words: {words} words total across ~8 scenes.\n"
             f"Proven Winning Hook Archetypes:\n{hooks_str}\n"
             f"Creative Execution Directives:\n{directives_str}\n"
         )
