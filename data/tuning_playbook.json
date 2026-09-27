@@ -1,24 +1,27 @@
 {
-  "last_updated": "2026-09-26T17:24:54.666948+00:00",
-  "analyzed_videos_count": 46,
-  "optimal_runtime_seconds": 27.8,
-  "optimal_word_count": 71,
+  "last_updated": "2026-09-27T00:51:47.511974+00:00",
+  "analyzed_videos_count": 0,
+  "optimal_runtime_seconds": 24.0,
+  "optimal_word_count": 62,
   "top_performing_topics": [
-    "Market timing and technical support levels for retail investors",
-    "Macro-economic lifestyle barriers (Real estate affordability)",
-    "Contrarian investment strategies (Discounted value investing vs. mainstream assets)"
+    "hidden charges",
+    "F&O lot size margin traps",
+    "IPO allotment hype",
+    "EMI trap",
+    "credit card tricks"
   ],
   "winning_hook_formulas": [
-    "The 'Stop/Warning' Command: Start with a negative imperative + specific financial pain point (e.g., 'Stop [Action] before you [Specific Consequence]').",
-    "The 'Hidden Reality' Reveal: Contrast a common financial belief with a 'secret' threat to purchasing power (e.g., 'Your [Common Asset] is secretly [Negative Action] every day')."
+    "Open on concrete financial damage: 'Your bank just charged you ₹X and you didn't notice'",
+    "Pattern interrupt: 'Stop buying Nifty index funds until you see this silent deduction'"
   ],
   "script_directives": [
-    "Keep total duration strictly under 22 seconds to maintain high completion rates.",
-    "Eliminate jargon; replace complex financial terms with direct, punchy emotional consequences like 'wealth incinerator' or 'purchasing power theft'.",
-    "Front-load the 'Why' in the first 3 seconds; avoid preamble or introductions to prevent immediate drop-offs."
+    "Scene 1 must be under 8 words spoken in under 3 seconds.",
+    "Show real mathematical loss in Scene 3 (₹ lost or % spread).",
+    "End on explicit save & share trigger in the voiceover."
   ],
   "seo_directives": [
-    "Use high-intent keywords in the title that address specific financial anxieties (e.g., 'Nifty', 'FD', 'Stocks', 'Home').",
-    "Limit hashtags to 3-4 highly relevant tags that focus on the specific asset class rather than generic finance terms."
-  ]
+    "Rotate between debunk, wealth, and alert hashtag clusters.",
+    "First line hook in Instagram caption must be under 80 characters."
+  ],
+  "data_status": "waiting_for_real_analytics"
 }
