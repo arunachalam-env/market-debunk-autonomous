@@ -382,3 +382,41 @@ def test_parse_tolerates_prose_around_json():
     raw = 'Based on sources 【3L10-L12】, here is the verdict: {"claims": [{"claim": "c", "verdict": "SUPPORTED", "reason": "r"}]} - end.'
     claims = parse_verdict_response(raw)
     assert claims and claims[0]["verdict"] == "SUPPORTED"
+
+
+def test_title_is_checked_with_narration(monkeypatch):
+    """The on-screen title makes claims too; it must reach the checker."""
+    from src.agents.fact_check_agent import FactCheckAgent
+
+    agent = FactCheckAgent(model="gemini-test")
+    seen = {}
+
+    def fake_verify(text, thesis):
+        seen["text"] = text
+        return '{"claims": [{"claim": "x", "verdict": "SUPPORTED", "reason": "r"}]}'
+
+    monkeypatch.setattr(agent, "_verify_with_grounded_model", fake_verify)
+    result = agent.check_script(
+        {"title": "Paytm Profit Jump: 78% Accounting Magic", "scenes": [{"narration": "Banks charge 40% hidden fees."}]},
+        thesis="t",
+    )
+    assert result.passed
+    assert "Paytm Profit Jump: 78% Accounting Magic" in seen["text"]
+    assert "Banks charge 40% hidden fees." in seen["text"]
+
+
+def test_title_claim_can_block(monkeypatch):
+    """A refuted claim that appears ONLY in the title must block publication."""
+    from src.agents.fact_check_agent import FactCheckAgent
+
+    agent = FactCheckAgent(model="gemini-test")
+
+    def fake_verify(text, thesis):
+        return '{"claims": [{"claim": "78% profit jump", "verdict": "REFUTED", "reason": "loss narrowed, not profit"}]}'
+
+    monkeypatch.setattr(agent, "_verify_with_grounded_model", fake_verify)
+    result = agent.check_script(
+        {"title": "78% Profit Jump", "scenes": [{"narration": "some benign narration"}]},
+        thesis="t",
+    )
+    assert not result.passed

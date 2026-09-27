@@ -137,6 +137,7 @@ class FactCheckAgent:
 
     def check_script(self, script_dict: dict, thesis: str = "") -> FactCheckResult:
         """Run the gate. Returns a FactCheckResult; caller decides what blocking means."""
+        title = str(script_dict.get("title", "")).strip()
         narration = "\n".join(
             str(scene.get("narration", "")).strip()
             for scene in script_dict.get("scenes", [])
@@ -144,9 +145,13 @@ class FactCheckAgent:
         )
         if not narration.strip():
             return FactCheckResult(passed=False, check_ran=False, error="empty narration")
+        # The on-screen title/hook makes factual claims too (e.g. "78% Profit
+        # Jump") and is exactly what viewers quote - it must be checked with
+        # the narration, not shipped unchecked.
+        checked_text = f"ON-SCREEN TITLE: {title}\n\nNARRATION:\n{narration}" if title else narration
 
         try:
-            raw = self._verify_with_grounded_model(narration, thesis)
+            raw = self._verify_with_grounded_model(checked_text, thesis)
         except Exception as exc:
             log.error("Fact-check call failed: %s", exc)
             return FactCheckResult(passed=False, check_ran=False, error=str(exc))
@@ -158,7 +163,7 @@ class FactCheckAgent:
             # verdict: retry the whole check once before failing closed.
             log.warning("Fact-check response unparseable (%s); regenerating verdict once.", exc)
             try:
-                raw = self._verify_with_grounded_model(narration, thesis)
+                raw = self._verify_with_grounded_model(checked_text, thesis)
                 claims = parse_verdict_response(raw)
             except Exception as exc2:
                 log.error("Fact-check response unparseable after retry: %s", exc2)
@@ -193,8 +198,9 @@ class FactCheckAgent:
         prompt = f"""You are a meticulous financial fact-checker for an Indian retail-investor Shorts channel.
 
 Below is the full narration of a 25-second video (topic thesis: {thesis or 'n/a'}).
+The text may begin with an ON-SCREEN TITLE line: the title is a viewer-facing
+factual claim too - extract and verify claims in it exactly like narration.
 
-NARRATION:
 {narration}
 
 Task:
