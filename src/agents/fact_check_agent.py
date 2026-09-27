@@ -32,7 +32,8 @@ _BLOCKING_VERDICTS = {"REFUTED", "UNVERIFIABLE"}
 
 # gemini-2.5-flash was retired by Google (404 NOT_FOUND for new usage). Try the
 # configured model first, then walk this list on model-not-found errors.
-FACT_CHECK_MODEL_FALLBACKS = ("gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash")
+# gemini-3.1-flash-lite is the last resort: weaker, but has separate free-tier quota.
+FACT_CHECK_MODEL_FALLBACKS = ("gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.1-flash-lite")
 
 
 @dataclass
