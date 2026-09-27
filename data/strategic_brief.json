@@ -1,12 +1,12 @@
 {
-  "topic_thesis": "Buying more financial books is a hidden tax on your wealth, keeping you in a cycle of perpetual learning while your capital sits idle.",
-  "strategic_angle": "The 'Knowledge Trap' is a marketing gimmick where influencers monetize your insecurity by selling the same financial literacy advice under different covers, effectively charging you to learn how to save money you are currently losing to inflation.",
+  "topic_thesis": "Candlestick patterns and technical indicators cannot predict price direction\u2014they are hindsight illusions sold by trading gurus while institutional algorithms hunt retail stop-losses.",
+  "strategic_angle": "Expose the mathematical fallacy of technical analysis where retail traders treat lagging past-price charts as a predictive crystal ball, ignoring that SEBI data shows 93% of retail chart-traders lose money while generating massive brokerage fees.",
   "format_type": "STANDALONE",
   "hook_style": "HARD_NUMBER_SHOCK",
-  "hook_type": "LOSS_IMPLICATION",
-  "key_statistic": "12% inflation-adjusted wealth erosion per year for every year you spend 'learning' instead of investing.",
-  "target_emotion": "Frustration and realization of wasted time",
-  "pinned_comment_text": "Are you 'studying' finance or actually growing your portfolio? Stop collecting books and start checking your expense ratios. Comment 'GUIDE' if you want our list of 3 things you should do instead of buying another course! \ud83d\udcda\ud83d\udcb8",
-  "tamil_adaptation_directive": "Use the phrase 'Puthagam padikrathula illa, portfolio growth-la dhaan matter iruku'. Focus on the 'Time Value of Money' vs 'Book Cost' argument. Use Tanglish terms like 'Financial Literacy Scam', 'Compound interest-a vida compound confusion dhaan adhigaama iruku', and 'Bank Manager advice-a vida direct investment dhaan best'.",
-  "source_signal": "Audience pain-point & market trend"
+  "hook_type": "MYTH_BUST",
+  "key_statistic": "93% retail traders lose money / \u20b92,00,000 average loss per trader (SEBI)",
+  "target_emotion": "Disillusionment and skepticism towards trading gurus and chart setups",
+  "pinned_comment_text": "Have you ever lost money following 'sure-shot' candlestick breakouts? Comment 'TRAP' below to get our breakdown on why institutional algos eat chart patterns for breakfast! \ud83d\udcac\ud83d\udc47",
+  "tamil_adaptation_directive": "Hook with 'Candlestick pattern paathu trade pann\u0bbe profit varuma?' Use sharp Tanglish terms like 'Chart Analysis Drama', 'Stop-loss hunting', and '93% per loss panranga'. Warn TN youth against buying expensive Tamil Telegram trading courses.",
+  "source_signal": "TRADE ACHIEVERS BS5 Technical Analysis prediction debate"
 }
