@@ -232,36 +232,62 @@ def fetch_fresh_pexels_broll(
                 log.info("No fresh unused clips for query '%s' (all seen/used). Trying next query...", query)
                 continue
 
-            # Randomize among the top 5 fresh candidates to prevent predictability
+            # Try the top fresh candidates (shuffled to prevent predictability)
+            # until one passes the visual sanity check.
             pool = fresh_candidates[: min(5, len(fresh_candidates))]
-            selected_id, selected_link = random.choice(pool)
+            random.shuffle(pool)
 
-            # Download video stream
-            r = requests.get(selected_link, stream=True, timeout=25)
-            if r.status_code == 200:
+            for selected_id, selected_link in pool:
+                # Download video stream
+                r = requests.get(selected_link, stream=True, timeout=25)
+                if r.status_code != 200:
+                    continue
                 output_path.parent.mkdir(parents=True, exist_ok=True)
                 with open(output_path, "wb") as f:
                     for chunk in r.iter_content(chunk_size=1024 * 1024):
                         if chunk:
                             f.write(chunk)
 
-                if output_path.exists() and output_path.stat().st_size > 50000:
-                    size_kb = output_path.stat().st_size // 1024
-                    log.info(
-                        " ✓ Fresh Pexels video downloaded for '%s' (ID %s, %d KB, pool size: %d)",
-                        query,
-                        selected_id,
-                        size_kb,
-                        len(fresh_candidates),
+                if not (output_path.exists() and output_path.stat().st_size > 50000):
+                    continue
+
+                # Black/empty clip guard: the release quality gate rejects
+                # mostly-black assets; catch them at download time and try the
+                # next candidate instead of killing the whole run at render.
+                from src.agents.quality_gate import _mean_luma
+                try:
+                    luma = _mean_luma(output_path)
+                except Exception as luma_err:
+                    log.warning("Could not inspect clip %s for '%s' (%s); trying another candidate.", selected_id, query, luma_err)
+                    session_used_ids.add(selected_id)
+                    record_used_video(selected_id)
+                    continue
+                if luma < 12:
+                    log.warning(
+                        "Pexels clip %s for '%s' is mostly black (luma %.1f); trying another candidate.",
+                        selected_id, query, luma,
                     )
                     session_used_ids.add(selected_id)
                     record_used_video(selected_id)
-                    return {
-                        "video_id": selected_id,
-                        "query": query,
-                        "file_path": output_path,
-                        "size_kb": size_kb,
-                    }
+                    continue
+
+                size_kb = output_path.stat().st_size // 1024
+                log.info(
+                    " ✓ Fresh Pexels video downloaded for '%s' (ID %s, %d KB, pool size: %d, luma %.0f)",
+                    query,
+                    selected_id,
+                    size_kb,
+                    len(fresh_candidates),
+                    luma,
+                )
+                session_used_ids.add(selected_id)
+                record_used_video(selected_id)
+                return {
+                    "video_id": selected_id,
+                    "query": query,
+                    "file_path": output_path,
+                    "size_kb": size_kb,
+                }
 
         except Exception as exc:
             log.warning("Pexels fetch attempt failed for '%s': %s", query, exc)
