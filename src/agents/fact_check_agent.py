@@ -216,7 +216,8 @@ factual claim too - extract and verify claims in it exactly like narration.
 {narration}
 {source_block}
 Task:
-1. Extract every checkable factual claim (statistics, percentages, rupee amounts, laws/regulations, regulator actions, company events, dates). Skip pure opinion, generic advice, and rhetorical hooks.
+1. Extract every checkable REAL-WORLD factual claim (statistics, percentages, rupee amounts, laws/regulations, regulator actions, company events, dates). Skip pure opinion, generic advice, and rhetorical hooks.
+   The narration may cast a fictional character (e.g. "Arun") acting out the story: the character's own actions, experiences, and possessions ("Arun paid", "Arun noticed", "his locker") are illustrative fiction, not real-world claims - do NOT extract or verify those. DO still extract and verify the underlying rule, fee, number, or fact the story illustrates (e.g. "fuel pumps may pass MDR to customers", "RBI caps locker liability at 100x rent").
 2. Verify each claim against current, reputable web sources using Google Search.
 3. Verdicts: SUPPORTED (a reputable current source confirms it), REFUTED (a reputable current source contradicts it), UNVERIFIABLE (no reliable source found, or the claim is exaggerated/misleadingly framed).
 
