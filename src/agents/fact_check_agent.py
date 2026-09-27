@@ -30,6 +30,10 @@ log = get_logger(__name__, phase="fact_check")
 
 _BLOCKING_VERDICTS = {"REFUTED", "UNVERIFIABLE"}
 
+# gemini-2.5-flash was retired by Google (404 NOT_FOUND for new usage). Try the
+# configured model first, then walk this list on model-not-found errors.
+FACT_CHECK_MODEL_FALLBACKS = ("gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash")
+
 
 @dataclass
 class FactCheckResult:
@@ -93,7 +97,8 @@ class FactCheckAgent:
     """Verifies narration claims with a search-grounded model before publishing."""
 
     def __init__(self, model: Optional[str] = None):
-        self.model = model or getattr(settings, "FACT_CHECK_MODEL", "") or "gemini-2.5-flash"
+        configured = model or getattr(settings, "FACT_CHECK_MODEL", "")
+        self.model = configured or FACT_CHECK_MODEL_FALLBACKS[0]
 
     def check_script(self, script_dict: dict, thesis: str = "") -> FactCheckResult:
         """Run the gate. Returns a FactCheckResult; caller decides what blocking means."""
@@ -159,15 +164,28 @@ Be strict: this channel debunks myths, so its own claims must be airtight. When 
 Return strict JSON only:
 {{"claims": [{{"claim": "...", "verdict": "SUPPORTED|REFUTED|UNVERIFIABLE", "reason": "one short sentence with the source basis"}}]}}"""
 
-        response = client.models.generate_content(
-            model=self.model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=0.1,
-                max_output_tokens=1500,
-                tools=[types.Tool(google_search=types.GoogleSearch())],
-            ),
-        )
-        if not response or not response.text:
-            raise RuntimeError("empty response from fact-check model")
-        return response.text
+        candidates = [self.model] + [m for m in FACT_CHECK_MODEL_FALLBACKS if m != self.model]
+        last_exc: Optional[Exception] = None
+        for candidate in candidates:
+            try:
+                response = client.models.generate_content(
+                    model=candidate,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        temperature=0.1,
+                        max_output_tokens=1500,
+                        tools=[types.Tool(google_search=types.GoogleSearch())],
+                    ),
+                )
+                if response and response.text:
+                    if candidate != self.model:
+                        log.warning("Fact-check model %s unavailable; used fallback %s.", self.model, candidate)
+                    return response.text
+                last_exc = RuntimeError("empty response from fact-check model")
+            except Exception as exc:
+                last_exc = exc
+                if "NOT_FOUND" in str(exc) or "no longer available" in str(exc):
+                    log.warning("Fact-check model %s not available; trying next fallback.", candidate)
+                    continue
+                raise
+        raise RuntimeError(f"all fact-check models failed: {last_exc}")

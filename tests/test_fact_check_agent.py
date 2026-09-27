@@ -76,3 +76,54 @@ def test_summary_lists_blocking_claims():
     result = evaluate_claims([{"claim": "Movie tickets have 570% tax", "verdict": "REFUTED", "reason": "GST is 18-28%"}])
     text = result.summary()
     assert "570%" in text and "REFUTED" in text
+
+
+def test_model_fallback_on_not_found(monkeypatch):
+    """Retired primary model (404 NOT_FOUND) falls through to the next model."""
+    agent = FactCheckAgent()
+    calls = []
+
+    class FakeResponse:
+        text = '{"claims": []}'
+
+    class FakeModels:
+        def generate_content(self, model=None, contents=None, config=None):
+            calls.append(model)
+            if len(calls) == 1:
+                raise Exception("404 NOT_FOUND. This model is no longer available to new users.")
+            return FakeResponse()
+
+    class FakeClient:
+        models = FakeModels()
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    from google import genai
+    monkeypatch.setattr(genai, "Client", lambda api_key=None: FakeClient())
+
+    raw = agent._verify_with_grounded_model("Your SIP is losing 2% yearly", "t")
+    assert raw == '{"claims": []}'
+    assert len(calls) == 2
+    assert calls[0] != calls[1]
+
+
+def test_non_model_error_does_not_fallback(monkeypatch):
+    """A quota/auth error raises immediately instead of walking the list."""
+    import pytest
+    agent = FactCheckAgent()
+    calls = []
+
+    class FakeModels:
+        def generate_content(self, model=None, contents=None, config=None):
+            calls.append(model)
+            raise Exception("429 RESOURCE_EXHAUSTED")
+
+    class FakeClient:
+        models = FakeModels()
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    from google import genai
+    monkeypatch.setattr(genai, "Client", lambda api_key=None: FakeClient())
+
+    with pytest.raises(Exception, match="429"):
+        agent._verify_with_grounded_model("Your SIP is losing 2% yearly", "t")
+    assert len(calls) == 1
