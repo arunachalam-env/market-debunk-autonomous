@@ -66,6 +66,10 @@ def _ass_header(
         # 2026-09-27). Small serif phrase captions at the bottom and a small
         # italic serif story title at the top, both in warm off-white.
         serif = "Playfair Display"
+        # Owner feedback 2026-09-27 23:32: subtitles sat too low and were hidden by the
+        # YouTube handle/UI zone. Fix: raise captions well above the Shorts UI strip,
+        # semi-transparent black background box, modern corporate font (Plus Jakarta Sans).
+        subtitle_font = "Plus Jakarta Sans"
         return (
             "[Script Info]\n"
             "ScriptType: v4.00+\n"
@@ -77,7 +81,7 @@ def _ass_header(
             "\n"
             "[V4+ Styles]\n"
             "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n"
-            f"Style: Default,{serif},52,&H00F5F0E6,&H00FFFFFF,{outline_color},&H64000000,0,0,0,0,100,100,1,0,{border_style},2,1,{alignment},{margin_h},{margin_h},90,1\n"
+            f"Style: Default,{subtitle_font},50,&H00F5F0E6,&H00FFFFFF,{outline_color},&H7F000000,-1,0,0,0,100,100,1,0,3,8,0,{alignment},{margin_h},{margin_h},340,1\n"
             f"Style: HookBanner,{serif},44,&H00EDE4D0,&H00FFFFFF,{outline_color},&H50000000,0,-1,0,0,100,100,1,0,{border_style},2,1,8,{margin_h},{margin_h},80,1\n"
             "\n"
             "[Events]\n"
