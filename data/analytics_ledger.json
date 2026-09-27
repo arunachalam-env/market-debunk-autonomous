@@ -469,5 +469,16 @@
     "status": "fetch_failed",
     "instagram": {},
     "youtube": {}
+  },
+  {
+    "timestamp_audited": "2026-09-27T16:58:22.241950+00:00",
+    "post_timestamp": "2026-09-25T17:58:19.465671+00:00",
+    "title": "Bank Account Fees: The Hidden SMS Drain #Shorts",
+    "hook": "💰 Banks are secretly draining your savings account balance every quarter",
+    "topic": "Banks quietly deduct quarterly SMS alert fees and debit card annual maintenance charges from your minimum balance savings account.",
+    "duration_seconds": 24.163266,
+    "status": "fetch_failed",
+    "instagram": {},
+    "youtube": {}
   }
 ]

@@ -1,12 +1,12 @@
 {
-  "topic_thesis": "Candlestick patterns and technical indicators cannot predict price direction\u2014they are hindsight illusions sold by trading gurus while institutional algorithms hunt retail stop-losses.",
-  "strategic_angle": "Expose the mathematical fallacy of technical analysis where retail traders treat lagging past-price charts as a predictive crystal ball, ignoring that SEBI data shows 93% of retail chart-traders lose money while generating massive brokerage fees.",
+  "topic_thesis": "Your 'free' UPI fuel payments are secretly being targeted with transaction surcharges because fuel pumps refuse to absorb the backend MDR fees on high-value digital transactions.",
+  "strategic_angle": "Expose the illusion of 100% free digital payments in India. When the government introduced interchange fees up to 1.1% on PPI-merchant UPI transactions above \u20b92,000, razor-thin margin fuel retailers began pushing back, setting the stage for sneaky fuel surcharges or card/wallet convenience fees being quietly offloaded onto daily commuters.",
   "format_type": "STANDALONE",
-  "hook_style": "HARD_NUMBER_SHOCK",
-  "hook_type": "MYTH_BUST",
-  "key_statistic": "93% retail traders lose money / \u20b92,00,000 average loss per trader (SEBI)",
-  "target_emotion": "Disillusionment and skepticism towards trading gurus and chart setups",
-  "pinned_comment_text": "Have you ever lost money following 'sure-shot' candlestick breakouts? Comment 'TRAP' below to get our breakdown on why institutional algos eat chart patterns for breakfast! \ud83d\udcac\ud83d\udc47",
-  "tamil_adaptation_directive": "Hook with 'Candlestick pattern paathu trade pann\u0bbe profit varuma?' Use sharp Tanglish terms like 'Chart Analysis Drama', 'Stop-loss hunting', and '93% per loss panranga'. Warn TN youth against buying expensive Tamil Telegram trading courses.",
-  "source_signal": "TRADE ACHIEVERS BS5 Technical Analysis prediction debate"
+  "hook_style": "EXPOSING_HYPOCRISY",
+  "hook_type": "LOSS_IMPLICATION",
+  "key_statistic": "1.1% interchange fee on wallet-UPI transactions above \u20b92,000",
+  "target_emotion": "Betrayal and sudden vigilance at petrol pump billing counters",
+  "pinned_comment_text": "Have you noticed fuel bunks asking you to pay cash or charging an extra \u20b910-\u20b920 for digital scans? Comment 'FUEL' and we'll send you the exact RBI rules on merchant surcharges! \u26fd\ud83d\udc47",
+  "tamil_adaptation_directive": "Frame with high local relatability: 'Petrol Bunk UPI Scam-a? Free UPI-la Hidden Charges?'. Use punchy Tanglish lines like 'Scanners-la panam anuppumbothu extra charge podraangala?' and break down why bunk owners hate UPI transactions above \u20b92,000.",
+  "source_signal": "Audience pain-point & market trend"
 }
