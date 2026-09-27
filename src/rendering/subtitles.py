@@ -123,11 +123,23 @@ def _build_dialogue_lines(
     dim_color = r"{\c&HFFFFFF&}"
     reset_color = r"{\rDefault}"
 
+    story_mode = bool(getattr(settings, "STORY_MODE", False))
+
     for chunk in chunks:
         chunk_start = scene_audio_offset + chunk[0]["start"]
         chunk_end = scene_audio_offset + chunk[-1]["end"]
         if chunk_end <= chunk_start:
             chunk_end = chunk_start + 0.6
+
+        if story_mode:
+            # Story Mode: phrase-level captions, one line per chunk, no karaoke
+            # word-highlighting - calm storybook pacing.
+            text = " ".join(w["word"].upper() for w in chunk)
+            lines.append(
+                f"Dialogue: 0,{_fmt_time(chunk_start)},{_fmt_time(chunk_end)},"
+                f"Default,,0,0,0,,{text}"
+            )
+            continue
 
         for i, active_word_data in enumerate(chunk):
             start = scene_audio_offset + active_word_data["start"]
@@ -181,8 +193,19 @@ def generate_ass_file(
 
     lines: list[str] = [_ass_header()]
 
+    story_mode = bool(getattr(settings, "STORY_MODE", False))
+    total_voice = sum(r.get("duration", 0.0) for r in voice_results)
+
     # Render prominent Scene 1 top-center visual hook banner (0.0s to 2.8s)
-    if hook_title:
+    if hook_title and story_mode:
+        # Story Mode: the story title stays up for the whole video, plain serif.
+        clean = re.sub(r"(?i)#\w+", "", hook_title).strip()
+        clean = re.sub(r"[^\w\s$%:'!-]", "", clean).strip()
+        if clean:
+            lines.append(
+                f"Dialogue: 1,0:00:00.00,{_fmt_time(max(total_voice, 1.0))},HookBanner,,0,0,0,,{clean}"
+            )
+    elif hook_title:
         clean = re.sub(r"(?i)#\w+", "", hook_title).strip()
         clean = re.sub(r"[^\w\s$%₹:!-]", "", clean).strip()
         if ":" in clean:

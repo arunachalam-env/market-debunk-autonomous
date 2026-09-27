@@ -39,7 +39,24 @@ def source_all_visuals(scenes: list, output_dir: Path, story_seed: Optional[dict
 
         # ── 100% Dynamic High-Velocity B-Roll for All Scenes (Approach A) ──
         sourced = False
-        if pexels_key:
+        # -- Story Mode: illustrated story frames first ------------------------
+        if bool(getattr(settings, "STORY_MODE", False)):
+            try:
+                from src.agents import story_image_agent
+                image_path = story_image_agent.generate_scene_image(scene, output_dir)
+            except Exception as story_err:  # noqa: BLE001 - B-roll fallback below
+                image_path = None
+                log.warning("Story image generation errored for scene %d: %s", scene_id, story_err)
+            if image_path:
+                visual_paths.append({
+                    "scene_id": scene_id,
+                    "asset_type": "image",
+                    "asset_path": str(image_path.resolve()),
+                    "source": "story_image",
+                })
+                log.info(" Scene %d story illustration sourced", scene_id)
+                sourced = True
+        if not sourced and pexels_key:
             video_filename = f"scene_{scene_id}.mp4"
             video_filepath = output_dir / video_filename
             queries = broll_agent.generate_scene_queries(scene, story_seed=story_seed)

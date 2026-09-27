@@ -209,6 +209,20 @@ class EnglishScriptRewriterAgent:
         if not scenes:
             return script
 
+        from src.utils.config import settings as _settings
+        story_mode = bool(getattr(_settings, "STORY_MODE", False))
+        if story_mode:
+            # Story Mode (Arun stories): keep language/citation cleanup and
+            # visual-prompt uniqueness only. Scene count, hook format, duration
+            # bounds, loop connector and title format follow the story spec -
+            # in particular, NEVER append a loop-connector sentence (it shipped
+            # broken mid-sentence endings) and never force a question hook.
+            scenes = self._fix_citations(scenes)
+            scenes = self._fix_prompts(scenes)
+            script["scenes"] = scenes
+            log.info("ScriptDoctor: story mode - kept citation/visual cleanup, skipped hook/loop/duration rewrites.")
+            return script
+
         # 1. Fix Scene Count Bounds (Must be between 5 and 7)
         scenes = self._fix_scene_count(scenes)
 
@@ -233,7 +247,8 @@ class EnglishScriptRewriterAgent:
         script["scenes"] = scenes
 
         # 8. Fix Metadata (Title and Hashtags)
-        script = self._fix_metadata(script, topic=topic)
+        if not story_mode:
+            script = self._fix_metadata(script, topic=topic)
 
         log.info("🛠️ ScriptDoctor: Deterministic auto-repair applied to English script.")
         return script

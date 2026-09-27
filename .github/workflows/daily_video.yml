@@ -12,6 +12,13 @@ on:
     - cron: '07 4 * * *'  # 09:37 AM IST (Fallback 1)
     - cron: '23 4 * * *'  # 09:53 AM IST (Fallback 2)
   workflow_dispatch: # Allow manual trigger from GitHub UI
+    inputs:
+      skip_publish:
+        description: 'Generate the video but do not publish anywhere (test mode)'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
 
 jobs:
   run-pipeline:
@@ -90,22 +97,24 @@ jobs:
           RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
           SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          STORY_MODE: ${{ vars.STORY_MODE || 'true' }}
+          GEMINI_IMAGE_API_KEY: ${{ secrets.GEMINI_IMAGE_API_KEY }}
           YT_API_KEY: ${{ secrets.YT_API_KEY }}
-          ENABLE_YT_UPLOAD: ${{ secrets.ENABLE_YT_UPLOAD || 'true' }}
-          ALLOW_PUBLICATION: ${{ secrets.ALLOW_PUBLICATION || 'true' }}
+          ENABLE_YT_UPLOAD: ${{ github.event.inputs.skip_publish == 'true' && 'false' || (secrets.ENABLE_YT_UPLOAD || 'true') }}
+          ALLOW_PUBLICATION: ${{ github.event.inputs.skip_publish == 'true' && 'false' || (secrets.ALLOW_PUBLICATION || 'true') }}
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
           ENABLE_TELEGRAM: ${{ secrets.ENABLE_TELEGRAM || 'true' }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          ENABLE_INSTAGRAM: ${{ secrets.ENABLE_INSTAGRAM || 'true' }}
+          ENABLE_INSTAGRAM: ${{ github.event.inputs.skip_publish == 'true' && 'false' || (secrets.ENABLE_INSTAGRAM || 'true') }}
           INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN || secrets.META_ACCESS_TOKEN }}
           INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
           INSTAGRAM_VIDEO_URL: ${{ secrets.INSTAGRAM_VIDEO_URL }}
           FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
           FACEBOOK_ACCESS_TOKEN: ${{ secrets.FACEBOOK_ACCESS_TOKEN || secrets.INSTAGRAM_ACCESS_TOKEN || secrets.META_ACCESS_TOKEN }}
-          ENABLE_FACEBOOK: ${{ secrets.ENABLE_FACEBOOK || 'true' }}
+          ENABLE_FACEBOOK: ${{ github.event.inputs.skip_publish == 'true' && 'false' || (secrets.ENABLE_FACEBOOK || 'true') }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN || secrets.GH_TOKEN || github.token }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN || secrets.GH_TOKEN || github.token }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
@@ -140,7 +149,7 @@ jobs:
           git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update topic, analytics, tuning playbook, and dedup history [skip ci]" && (git pull origin master --rebase --autostash -X ours || true) && git push origin master)
 
       - name: Trigger Tamil companion pipeline
-        if: success()
+        if: success() && github.event.inputs.skip_publish != 'true' 
         env:
           GH_TOKEN: ${{ secrets.TAMIL_WORKFLOW_TOKEN }}
         run: |

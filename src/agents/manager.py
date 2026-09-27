@@ -139,7 +139,11 @@ def run_pipeline():
 
             # ── Phase 1.75: Question Crafting (Anti-Repetition Hook) ──────
             question_hook = ""
+            if bool(getattr(settings, "STORY_MODE", False)):
+                log.info("Story mode: paradox cold-open replaces the question hook; skipping QuestionCraftingAgent.")
             try:
+                if bool(getattr(settings, "STORY_MODE", False)):
+                    raise ValueError("story mode active")
                 from src.agents.question_agent import QuestionCraftingAgent
                 hook_type = getattr(strategic_brief, "hook_type", "LOSS_IMPLICATION") if strategic_brief else "LOSS_IMPLICATION"
                 topic_keywords = story_seed.get("concept_name", "") if isinstance(story_seed, dict) else ""
@@ -223,10 +227,14 @@ def run_pipeline():
                 concept = story_seed.get("concept", "") if isinstance(story_seed, dict) else ""
                 clean_title = script_dict["title"].replace("#Shorts", "").strip(" :|-")
                 keyword = resolve_high_reach_keyword(f"{thesis} {clean_title} {concept}")
-                # Remove keyword from clean_title if it starts with it
-                if clean_title.lower().startswith(keyword.lower()):
-                    clean_title = clean_title[len(keyword):].strip(" :|-")
-                script_dict["title"] = format_high_reach_title(keyword, f"Exposing {clean_title}", max_length=55)
+                if bool(getattr(settings, "STORY_MODE", False)):
+                    # Story Mode: keep the story title, add a chapter marker.
+                    script_dict["title"] = f"{clean_title} - Another Chapter"[:55]
+                else:
+                    # Remove keyword from clean_title if it starts with it
+                    if clean_title.lower().startswith(keyword.lower()):
+                        clean_title = clean_title[len(keyword):].strip(" :|-")
+                    script_dict["title"] = format_high_reach_title(keyword, f"Exposing {clean_title}", max_length=55)
                 log.info("✓ Auto-corrected title to: '%s'", script_dict["title"])
 
             # Preflight timing before any TTS or visual generation.

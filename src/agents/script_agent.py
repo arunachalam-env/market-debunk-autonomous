@@ -11,6 +11,11 @@ from src.utils.youtube_titles import normalize_youtube_title
 
 log = get_logger(__name__, phase="script_generation")
 
+
+def _story_mode() -> bool:
+    """Story Mode: 75-120s illustrated Arun stories instead of 24s Shorts."""
+    return bool(getattr(settings, "STORY_MODE", False))
+
 # ──────────────────────────────────────────────────────────────────────────────
 #  Pydantic Schema
 # ──────────────────────────────────────────────────────────────────────────────
@@ -27,8 +32,9 @@ class ScenePayload(BaseModel):
     def validate_narration(cls, value: str) -> str:
         cleaned = " ".join(value.split())
         word_count = len(cleaned.split())
-        if not 4 <= word_count <= 26:
-            raise ValueError(f"Each scene narration must be 4-26 words; got {word_count}.")
+        lo, hi = (3, 45) if _story_mode() else (4, 26)
+        if not lo <= word_count <= hi:
+            raise ValueError(f"Each scene narration must be {lo}-{hi} words; got {word_count}.")
         banned = [
             "as an ai", "not financial advice", "subscribe now",
             "what you didn't see", "that's called", "here's the rule",
@@ -83,6 +89,9 @@ class ScriptPayload(BaseModel):
             resolve_high_reach_keyword,
         )
         clean = value.replace("#Shorts", "").strip(" :|-")
+        if _story_mode():
+            # Story Mode: curiosity story titles, no forced keyword:angle format.
+            return normalize_youtube_title(clean, max_length=55)
         banned_openers = ("why ", "what ", "how ", "is your ", "the silent ", "the hidden ", "stop buying ", "many investors ", "todays youth ")
         if any(clean.lower().startswith(b) for b in banned_openers) or ":" not in clean:
             keyword = resolve_high_reach_keyword(clean)
@@ -92,8 +101,9 @@ class ScriptPayload(BaseModel):
     @field_validator("scenes")
     @classmethod
     def check_scenes(cls, v):
-        if not (6 <= len(v) <= 9):
-            raise ValueError(f"Script must have 6-9 scenes (Fast-Hook format, ~3s per visual), got {len(v)}")
+        lo, hi = (8, 16) if _story_mode() else (6, 9)
+        if not (lo <= len(v) <= hi):
+            raise ValueError(f"Script must have {lo}-{hi} scenes, got {len(v)}")
         scene_ids = [scene.scene_id for scene in v]
         expected_ids = list(range(1, len(v) + 1))
         if scene_ids != expected_ids:
@@ -109,6 +119,9 @@ class ScriptPayload(BaseModel):
         Guarantees that final scene voiceover contains a rapid retention CTA.
         Accepts fast 2-3 word subliminal sign-offs to maintain pacing.
         """
+        if _story_mode():
+            # Story Mode ends on the 3 takeaways; no spoken CTA is appended.
+            return self
         last_scene = self.scenes[-1]
         narration = last_scene.narration.strip()
         has_cta = any(
@@ -134,10 +147,10 @@ class ScriptPayload(BaseModel):
         total_words = sum(len(scene.narration.split()) for scene in self.scenes)
         # Fast-Hook Short (< 30s): 50-80 words ideal for 6-scene format (~22-26s).
         # We do NOT slice off words from sentences; sentences must remain grammatically complete.
-        if not 45 <= total_words <= 95:
+        lo, hi = ((150, 340) if _story_mode() else (45, 95))
+        if not lo <= total_words <= hi:
             raise ValueError(
-                f"Script must contain 45-95 narration words for 6-scene Fast-Hook Short (~24s); got {total_words}. "
-                "Ensure each scene has 9-14 words of complete, punchy spoken dialogue."
+                f"Script must contain {lo}-{hi} narration words; got {total_words}."
             )
         visual_prompts = [scene.visual_prompt.lower() for scene in self.scenes]
         if len(set(visual_prompts)) != len(visual_prompts):
@@ -147,6 +160,9 @@ class ScriptPayload(BaseModel):
     @model_validator(mode="after")
     def check_second_person_voice(self):
         """Require 'you' or 'your' in at least 2 scenes to maintain conversational viewer-direct focus."""
+        if _story_mode():
+            # Story Mode is third-person narration about Arun.
+            return self
         min_required = max(2, int(len(self.scenes) * 0.35))
         second_person_scenes = sum(
             1 for scene in self.scenes
@@ -166,6 +182,9 @@ class ScriptPayload(BaseModel):
         Silent auto-fix — does NOT raise ValueError or burn a model retry.
         This is the final safety net after QuestionCraftingAgent + rewriter.
         """
+        if _story_mode():
+            # Story Mode opens on a paradox statement, never a question.
+            return self
         scene1 = self.scenes[0]
         narration = scene1.narration.strip()
 
@@ -209,6 +228,70 @@ class ScriptPayload(BaseModel):
 #  System Prompt — 12-Scene Cinematic Format
 # ──────────────────────────────────────────────────────────────────────────────
   
+_STORY_SYSTEM_PROMPT = """You are the head storyteller for "Market Debunk", now a STORY channel.
+
+Every video is a 75-120 second illustrated story about Arun - a recurring character the
+audience follows like a show. You teach one real finance/economics concept per episode by
+letting Arun LIVE through it. Never lecture. Never warn. Tell the story.
+
+THE 7-BEAT FORMULA (map beats across 10-14 scenes, one visual per scene):
+1. COLD-OPEN PARADOX (scene 1, 0-3s): a contradiction with exact numbers, stated as fact.
+   Style: "Arun just prepaid Rs 5,00,000 into his 8.5% home loan. It quietly cost him a fortune."
+   NEVER a question, NEVER a warning, NEVER "trap/exposed" framing.
+2. MEET THE CHARACTER (scenes 1-2): "Meet Arun, 24." His job, his city, his concrete goal.
+3. THE MONEY CHAIN (scenes 3-6): step-by-step what he does, with the EXACT rupee amounts,
+   rates, and dates from the sourced story at every beat. The viewer follows the money.
+4. THE COST LANDS (scenes 7-9): the hidden consequence hits Arun specifically and emotionally.
+5. NAME THE CONCEPT (scene ~10): "In economics, this is called X." The viewer leaves owning
+   a new term. Use the concept from the story seed; if none fits, name the real mechanism plainly.
+6. BRIDGE TO TODAY (scene ~11): "You see this today in..." - name the REAL Indian company,
+   product, bank, or scheme from the sourced story. Named entities only, never "some banks".
+7. "SO, WHAT DID WE LEARN?" (final scenes): exactly 3 ultra-short takeaways, each a complete
+   sentence under 8 words. No CTA, no "save this", no loop tricks. End clean.
+
+CHARACTER VOICE:
+- Third-person narrator telling Arun's story warmly, like a friend recounting what happened.
+- Vary sentence length. Fragments allowed. Humans speak unevenly.
+- Concrete over abstract, always: "Rs 8,340 a month", never "a large sum".
+- BANNED words: trap, exposed, scam, shocking, "silent killer", "did you know", "in this video".
+
+ACCURACY & FORMAT MANDATE (NON-NEGOTIABLE):
+- Every number, date, regulation, and company/investor fact must be REAL and verifiable. A
+  fact-check gate blocks publishing on any refuted or unverifiable claim.
+- FACT-FIRST FRAMING: never force a debunk angle. The story follows the verified facts.
+- TRACEABILITY RULE: a specific number, percentage, or rupee amount may appear in the narration
+  ONLY if it is present in this video's thesis, story seed, or supplied source material. If the
+  source gives no figure, make the point qualitatively and NEVER fabricate a figure or cite
+  unnamed "reports", "studies", or "experts".
+- All visuals are AI-generated storybook illustrations of Arun's world. Never write visual
+  prompts requiring real footage, real people, brands, or logos.
+
+VISUAL PROMPT GUIDELINES:
+- Every visual_prompt describes ONE illustrated story beat featuring Arun (or his world):
+  what he does, where he is, the key prop (phone screen, notebook, receipt, shop counter).
+- Keep him consistent: young Indian man, 24, olive hoodie, Chennai apartment.
+- Props carry the story: the goals notebook, the filter coffee tumbler, the loan statement.
+- No text/words/letters inside images. Emotion through posture and light, not labels.
+
+OUTPUT FORMAT - Return ONLY valid JSON, nothing else, no markdown fences:
+{
+  "title": "Story title with a curiosity gap, max 55 chars. Examples: 'Arun's Expensive Good Habit', 'The Prepayment That Ate Arun's Future'. NO keywords-colon format, NO fear words, NO #Shorts.",
+  "description": "150-300 chars. Formal definition of the concept the story teaches: 'In economics, [concept] is...'",
+  "hashtags": ["MarketDebunk", "MoneyStories", "PersonalFinance", "InvestingIndia", "FinanceShorts"],
+  "scenes": [
+    {
+      "scene_id": 1,
+      "narration": "Arun just prepaid Rs 5,00,000 into his home loan. Everyone calls it his smartest move.",
+      "visual_prompt": "Arun at his desk at dusk, proudly holding up his phone showing a payment screen, warm lamplight, Chennai rooftops behind him",
+      "broll_keyword": "loan payment phone",
+      "duration_hint": 6.0
+    }
+  ]
+}
+
+CRITICAL: 10-14 scenes. 200-320 total narration words (75-120 seconds). One continuous spoken
+story, never a list. End on the 3 takeaways. No CTA anywhere."""
+
 _SYSTEM_PROMPT = """You are the lead viral scriptwriter and creative director for "Market Debunk".
 You write explosive, scroll-stopping, high-retention English financial short-form scripts (YouTube Shorts, Instagram Reels, TikTok).
 
@@ -392,7 +475,7 @@ def _get_api_clients():
 
 def _get_system_prompt_with_negative_guidance() -> str:
     """Dynamically append deprecated patterns from the 48h analytics sensor to system prompt."""
-    prompt = _SYSTEM_PROMPT
+    prompt = _STORY_SYSTEM_PROMPT if _story_mode() else _SYSTEM_PROMPT
     try:
         from src.analytics.analytics_sensor import AnalyticsSensor
         deprecated = AnalyticsSensor().load_deprecated_patterns()
@@ -410,7 +493,7 @@ def _get_system_prompt_with_negative_guidance() -> str:
 
     try:
         from src.analytics.tuner_agent import PerformanceTuningAgent
-        tuner_directives = PerformanceTuningAgent().get_script_directives_prompt()
+        tuner_directives = "" if _story_mode() else PerformanceTuningAgent().get_script_directives_prompt()
         if tuner_directives:
             prompt += tuner_directives
             log.info("✓ Injected algorithmic tuning directives into scriptwriter prompt")
@@ -545,7 +628,11 @@ def generate_script(
     question_hook: Pre-crafted specific question from QuestionCraftingAgent. If provided,
                    injected as mandatory Scene 1 narration seed into the LLM prompt.
     """
-    log.info("Generating Fast-Hook (%d scenes, < 30s) script | thesis: '%s'", target_scenes, thesis)
+    if _story_mode():
+        target_scenes = 12
+        log.info("Generating Arun story script (%d scenes, 75-120s) | thesis: '%s'", target_scenes, thesis)
+    else:
+        log.info("Generating Fast-Hook (%d scenes, < 30s) script | thesis: '%s'", target_scenes, thesis)
 
     seed_context = ""
     if story_seed:
@@ -568,7 +655,14 @@ Safe Visual Evidence Object: {story_seed.get('visual_evidence', '')}
         log.warning("Feedback intelligence injection note: %s", fe)
 
     # Build Scene 1 hook instruction — use pre-crafted question if available
-    if question_hook:
+    if _story_mode():
+        scene1_hook_instruction = (
+            "- scene 1 opens the story with a PARADOX stated as fact, carrying the exact "
+            "numbers from the sourced story. NEVER a question, never a warning. "
+            "Example: 'Arun just prepaid Rs 5,00,000 into his 8.5% home loan. "
+            "Everyone calls it his smartest move. It quietly cost him a fortune.'"
+        )
+    elif question_hook:
         scene1_hook_instruction = (
             f"- CRITICAL: Scene 1 narration MUST be EXACTLY this pre-crafted question (do not paraphrase or alter it): "
             f"\"{question_hook}\""
@@ -593,7 +687,24 @@ Safe Visual Evidence Object: {story_seed.get('visual_evidence', '')}
             "verbatim in the thesis/story seed above.\n"
         )
 
-    user_prompt = f"""Core financial thesis: "{thesis}"
+    if _story_mode():
+        user_prompt = f"""Core financial thesis: "{thesis}"
+{seed_context}{forbidden_block}
+Now generate the complete {target_scenes}-scene Arun story script (75-120 seconds, 200-320 words total) as JSON.
+Remember: exactly {target_scenes} scenes.
+
+Before answering, internally check that:
+- the title is a curiosity story title (max 55 chars), no fear words, no #Shorts;
+- {scene1_hook_instruction};
+- the narration tells ONE continuous spoken story about Arun in third person, with varied sentence lengths;
+- every specific number, percentage, or rupee amount in the narration appears in the thesis/story seed above - anything unsourced is rephrased qualitatively, never fabricated;
+- the money-chain scenes carry exact sourced figures at every beat;
+- one scene names the concept plainly ("In economics, this is called X");
+- one scene bridges to today naming the REAL company/product from the sourced story;
+- the final scenes deliver exactly 3 short takeaways after "So, what did we learn?" - no CTA;
+- every visual_prompt is one illustrated story beat with Arun (young Indian man, 24, olive hoodie, Chennai apartment world), no text/words inside images, each prompt unique."""
+    else:
+        user_prompt = f"""Core financial thesis: "{thesis}"
 {seed_context}{forbidden_block}
 Now generate the complete {target_scenes}-scene Fast-Hook cinematic short-story script (< 30s runtime, 55-75 words total) as JSON.
 Remember: Exactly {target_scenes} scenes.
