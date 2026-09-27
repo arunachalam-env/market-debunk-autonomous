@@ -38,7 +38,7 @@ FACT_CHECK_MODEL_FALLBACKS = ("gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.
 # models, but no Google-Search grounding - if the API rejects the search tool,
 # the check runs on model knowledge only and the normal blocking rules still
 # apply (UNVERIFIABLE blocks). If Gemma errors out, the gate fails closed.
-GEMMA_FACT_CHECK_FALLBACKS = ("gemma-3-27b-it", "gemma-3-12b-it")
+GEMMA_FACT_CHECK_FALLBACKS = ("gemma-4-31b-it", "gemma-4-26b-a4b-it")
 
 _UNGROUNDED_SUFFIX = (
     "\n\nNOTE: live web search is unavailable for this check. Verify each claim "
