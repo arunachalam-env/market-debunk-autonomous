@@ -308,3 +308,34 @@ def test_empty_response_retries_once_then_walks_models(monkeypatch):
     assert len(calls) == 3
     assert calls[0] == calls[1]  # in-place retry after empty response
     assert calls[1] != calls[2]  # then rotation
+
+
+def test_unparseable_response_retries_once(monkeypatch):
+    """A truncated verdict JSON triggers one regeneration before failing closed."""
+    import pytest
+    agent = FactCheckAgent()
+    calls = []
+
+    def fake_verify(narration, thesis):
+        calls.append(1)
+        return '{"claims": [{"claim": "x", "verdict": "UNVERIF'
+
+    monkeypatch.setattr(agent, "_verify_with_grounded_model", fake_verify)
+    result = agent.check_script({"scenes": [{"narration": "prices are rising fast"}]}, thesis="t")
+    assert len(calls) == 2
+    assert result.passed is False
+    assert result.check_ran is False
+    assert "unparseable" in result.error
+
+
+def test_unparseable_then_valid_recovers(monkeypatch):
+    """If the retry returns clean JSON, the gate evaluates normally."""
+    agent = FactCheckAgent()
+    outputs = iter([
+        '{"claims": [{"claim": "x", "verdict": "UNVERIF',
+        '{"claims": [{"claim": "x", "verdict": "SUPPORTED", "reason": "ok"}]}',
+    ])
+    monkeypatch.setattr(agent, "_verify_with_grounded_model", lambda n, t: next(outputs))
+    result = agent.check_script({"scenes": [{"narration": "prices are rising fast"}]}, thesis="t")
+    assert result.check_ran is True
+    assert result.passed is True

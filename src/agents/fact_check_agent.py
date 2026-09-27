@@ -140,8 +140,15 @@ class FactCheckAgent:
         try:
             claims = parse_verdict_response(raw)
         except Exception as exc:
-            log.error("Fact-check response unparseable: %s", exc)
-            return FactCheckResult(passed=False, check_ran=False, error=f"unparseable response: {exc}")
+            # A truncated/malformed verdict is a transport artifact, not a
+            # verdict: retry the whole check once before failing closed.
+            log.warning("Fact-check response unparseable (%s); regenerating verdict once.", exc)
+            try:
+                raw = self._verify_with_grounded_model(narration, thesis)
+                claims = parse_verdict_response(raw)
+            except Exception as exc2:
+                log.error("Fact-check response unparseable after retry: %s", exc2)
+                return FactCheckResult(passed=False, check_ran=False, error=f"unparseable response: {exc2}")
 
         if not claims:
             log.warning("Fact-check found no checkable claims; treating as unverified content.")
@@ -258,7 +265,7 @@ Return strict JSON only:
         """One model attempt. Runs search-grounded; for Gemma models (no search
         tool support) retries once without the tool. Returns (text, grounded)."""
         def _call(grounded: bool, text: str):
-            kwargs = dict(temperature=0.1, max_output_tokens=1500)
+            kwargs = dict(temperature=0.1, max_output_tokens=3000)
             if grounded:
                 kwargs["tools"] = [types.Tool(google_search=types.GoogleSearch())]
             return client.models.generate_content(
