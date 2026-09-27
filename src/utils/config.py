@@ -83,14 +83,14 @@ class Settings:
     VIDEO_WIDTH: int = int(_get("VIDEO_WIDTH", default="1080"))
     VIDEO_HEIGHT: int = int(_get("VIDEO_HEIGHT", default="1920"))
     VIDEO_FPS: int = int(_get("VIDEO_FPS", default="30"))
-    VIDEO_DURATION_TARGET: int = int(_get("VIDEO_DURATION_TARGET", default="25"))
+    VIDEO_DURATION_TARGET: int = int(_get("VIDEO_DURATION_TARGET", default="80"))
     # -- Story Mode (Arun storybook format) ----------------------------------
     # When enabled, the pipeline produces 75-120s illustrated story videos
     # (10-14 scenes) instead of 24s stock-footage Shorts.
     STORY_MODE: bool = (_get("STORY_MODE", default="true") or "true").lower() == "true"
     STORY_IMAGE_MODEL: str = _get("STORY_IMAGE_MODEL", default="gemini-2.5-flash-image") or "gemini-2.5-flash-image"
     MIN_VIDEO_DURATION: float = float(_get("MIN_VIDEO_DURATION", default=("45.0" if STORY_MODE else "15.0")))
-    MAX_VIDEO_DURATION: float = float(_get("MAX_VIDEO_DURATION", default=("150.0" if STORY_MODE else "45.0")))
+    MAX_VIDEO_DURATION: float = float(_get("MAX_VIDEO_DURATION", default=("93.0" if STORY_MODE else "45.0")))
     VISUAL_GENERATION_DELAY_SECONDS: float = float(_get("VISUAL_GENERATION_DELAY_SECONDS", default="10"))
     BGM_VOLUME_DB: float = float(_get("BGM_VOLUME_DB", default="-5.5"))
     BGM_MIX_RETRIES: int = int(_get("BGM_MIX_RETRIES", default="3"))
