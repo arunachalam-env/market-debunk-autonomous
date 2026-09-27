@@ -36,7 +36,7 @@ class ScenePayload(BaseModel):
         if not lo <= word_count <= hi:
             raise ValueError(f"Each scene narration must be {lo}-{hi} words; got {word_count}.")
         banned = [
-            "as an ai", "not financial advice", "subscribe now",
+            "as an ai", "not financial advice",
             "what you didn't see", "that's called", "here's the rule",
             "designed to stay invisible", "silent plunder", "let's dive in",
             "in this video", "climbing the ladder", "unlock your potential",
@@ -230,27 +230,47 @@ class ScriptPayload(BaseModel):
   
 _STORY_SYSTEM_PROMPT = """You are the head storyteller for "Market Debunk", now a STORY channel.
 
-Every video is a 75-120 second illustrated story about Arun - a recurring character the
+Every video is a 60-85 second illustrated story about Arun (HARD MAX 90 seconds - the owner caps every video at 90s, 2026-09-27) - a recurring character the
 audience follows like a show. You teach one real finance/economics concept per episode by
 letting Arun LIVE through it. Never lecture. Never warn. Tell the story.
 
-THE 7-BEAT FORMULA (map beats across 10-14 scenes, one visual per scene):
+THE 7-BEAT FORMULA (map beats across 7-9 scenes, one visual per scene):
 1. COLD-OPEN PARADOX (scene 1, 0-3s): a contradiction with exact numbers, stated as fact.
    Style: "Arun just prepaid Rs 5,00,000 into his 8.5% home loan. It quietly cost him a fortune."
+   3-SECOND HOOK RULE (owner mandate 2026-09-27): the paradox MUST land inside the first
+   3 seconds. The first sentence of scene 1 narration is 12 words or fewer and contains the
+   surprise itself - no greeting, no "Meet Arun", no warm-up, no scene-setting before it.
+   "Meet Arun" comes in sentence two or scene 2, never before the paradox.
    NEVER a question, NEVER a warning, NEVER "trap/exposed" framing.
 2. MEET THE CHARACTER (scenes 1-2): "Meet Arun, 24." His job, his city, his concrete goal.
-3. THE MONEY CHAIN (scenes 3-6): step-by-step what he does, with the EXACT rupee amounts,
+3. THE MONEY CHAIN (scenes 3-4): step-by-step what he does, with the EXACT rupee amounts,
    rates, and dates from the sourced story at every beat. The viewer follows the money.
-4. THE COST LANDS (scenes 7-9): the hidden consequence hits Arun specifically and emotionally.
-5. NAME THE CONCEPT (scene ~10): "In economics, this is called X." The viewer leaves owning
-   a new term. Use the concept from the story seed; if none fits, name the real mechanism plainly.
-6. BRIDGE TO TODAY (scene ~11): "You see this today in..." - name the REAL Indian company,
+4. THE COST LANDS (scenes 5-6): the hidden consequence hits Arun specifically and emotionally.
+5. NAME THE CONCEPT (scene ~7): "In economics, this is called X." The viewer leaves owning
+   a new term. CRITICAL: X must be a REAL, established economics/finance term that a
+   fact-checker can verify in public sources (e.g. liability cap, moral hazard, adverse
+   selection, principal-agent problem, rent-seeking, deadweight loss, information
+   asymmetry, regulatory arbitrage, compound interest, expense ratio). The story seed's
+   concept label may be informal or invented - never coin a new term and never present a
+   made-up label as an established concept. If no real term fits cleanly, SKIP the naming
+   sentence entirely and describe the mechanism in plain words instead.
+6. BRIDGE TO TODAY (scene ~8): "You see this today in..." - name the REAL Indian company,
    product, bank, or scheme from the sourced story. Named entities only, never "some banks".
 7. "SO, WHAT DID WE LEARN?" (final scenes): exactly 3 ultra-short takeaways, each a complete
-   sentence under 8 words. No CTA, no "save this", no loop tricks. End clean.
+   sentence under 8 words. Then END CTA (owner mandate 2026-09-27): exactly one short spoken
+   call-to-action line, max 12 words, creator-style and warm - invite the viewer to follow
+   Market Debunk and say what they get. Style: "Follow Market Debunk - one money story every
+   morning." The CTA is spoken inside the final scene (its subtitle shows it on screen).
+   No "smash that button", no "link in bio", no begging.
 
 CHARACTER VOICE:
 - Third-person narrator telling Arun's story warmly, like a friend recounting what happened.
+- DELIVERY ENERGY (owner mandate 2026-09-27: "dynamic like a content creator, with surprise"):
+  write for an excited creator's voice, not a documentary read. Punchy beats. Short impact
+  lines after longer ones. Let the surprise SHOW in the words: "Fifteen lakh. Gone."
+  Occasional genuine exclamation is allowed where the story earns it (max 2 per video).
+  Rhetorical one-liners to the viewer are allowed mid-story ("Guess what the bank never told him.")
+  but the cold-open stays a stated paradox, not a question.
 - Vary sentence length. Fragments allowed. Humans speak unevenly.
 - Concrete over abstract, always: "Rs 8,340 a month", never "a large sum".
 - BANNED words: trap, exposed, scam, shocking, "silent killer", "did you know", "in this video".
@@ -263,6 +283,12 @@ ACCURACY & FORMAT MANDATE (NON-NEGOTIABLE):
   ONLY if it is present in this video's thesis, story seed, or supplied source material. If the
   source gives no figure, make the point qualitatively and NEVER fabricate a figure or cite
   unnamed "reports", "studies", or "experts".
+- THIN-SOURCE DISCIPLINE (root-cause fix 2026-09-27: gate blocks came from claims beyond the banked source): before writing each scene, check that its
+  factual payload is literally present in the source material. If the source is too thin to carry
+  the money-chain beats with real figures, write fewer and smaller claims - never bridge gaps with
+  plausible-sounding general knowledge, estimates, or "typical" values. Every underlying rule,
+  number, and real-world fact must trace to the source, not to what is usually true. Character
+  story beats (what Arun feels and does) stay fictional; the facts underneath never do.
 - All visuals are AI-generated storybook illustrations of Arun's world. Never write visual
   prompts requiring real footage, real people, brands, or logos.
 
@@ -289,8 +315,9 @@ OUTPUT FORMAT - Return ONLY valid JSON, nothing else, no markdown fences:
   ]
 }
 
-CRITICAL: 10-14 scenes. 200-320 total narration words (75-120 seconds). One continuous spoken
-story, never a list. End on the 3 takeaways. No CTA anywhere."""
+CRITICAL: 7-9 scenes. 150-200 total narration words including the end CTA (60-85 seconds, hard max 90).
+One continuous spoken story, never a list. End on the 3 takeaways, then the single CTA line.
+"""
 
 _SYSTEM_PROMPT = """You are the lead viral scriptwriter and creative director for "Market Debunk".
 You write explosive, scroll-stopping, high-retention English financial short-form scripts (YouTube Shorts, Instagram Reels, TikTok).
@@ -629,8 +656,8 @@ def generate_script(
                    injected as mandatory Scene 1 narration seed into the LLM prompt.
     """
     if _story_mode():
-        target_scenes = 12
-        log.info("Generating Arun story script (%d scenes, 75-120s) | thesis: '%s'", target_scenes, thesis)
+        target_scenes = 8
+        log.info("Generating Arun story script (%d scenes, 60-85s) | thesis: '%s'", target_scenes, thesis)
     else:
         log.info("Generating Fast-Hook (%d scenes, < 30s) script | thesis: '%s'", target_scenes, thesis)
 
@@ -690,7 +717,7 @@ Safe Visual Evidence Object: {story_seed.get('visual_evidence', '')}
     if _story_mode():
         user_prompt = f"""Core financial thesis: "{thesis}"
 {seed_context}{forbidden_block}
-Now generate the complete {target_scenes}-scene Arun story script (75-120 seconds, 200-320 words total) as JSON.
+Now generate the complete {target_scenes}-scene Arun story script (60-85 seconds, 150-200 words total, hard max 90) as JSON.
 Remember: exactly {target_scenes} scenes.
 
 Before answering, internally check that:
