@@ -3,6 +3,7 @@ import json
 
 from src.agents.fact_check_agent import (
     FACT_CHECK_MODEL_FALLBACKS,
+    GEMMA_FACT_CHECK_FALLBACKS,
     FactCheckAgent,
     FactCheckResult,
     evaluate_claims,
@@ -127,7 +128,8 @@ def test_quota_error_walks_models_then_raises(monkeypatch):
 
     with pytest.raises(Exception, match="all fact-check models/keys failed"):
         agent._verify_with_grounded_model("Your SIP is losing 2% yearly", "t")
-    assert len(calls) == 1 + len(FACT_CHECK_MODEL_FALLBACKS) - 1  # primary + distinct fallbacks
+    # primary + distinct gemini fallbacks + gemma fallbacks (one key)
+    assert len(calls) == 1 + len(FACT_CHECK_MODEL_FALLBACKS) - 1 + len(GEMMA_FACT_CHECK_FALLBACKS)
 
 
 def test_quota_error_rotates_keys(monkeypatch):
@@ -185,3 +187,60 @@ def test_auth_error_raises_immediately(monkeypatch):
     with pytest.raises(Exception, match="403"):
         agent._verify_with_grounded_model("Your SIP is losing 2% yearly", "t")
     assert len(calls) == 1
+
+
+def test_gemma_ungrounded_fallback(monkeypatch):
+    """Gemini models 404; Gemma rejects the search tool, then succeeds ungrounded."""
+    agent = FactCheckAgent()
+    calls = []
+
+    class FakeResponse:
+        text = '{"claims": []}'
+
+    class FakeModels:
+        def generate_content(self, model=None, contents=None, config=None):
+            has_tools = bool(getattr(config, "tools", None))
+            calls.append((model, has_tools))
+            if model.startswith("gemini-"):
+                raise Exception("404 NOT_FOUND: model no longer available")
+            if has_tools:
+                raise Exception("400 INVALID_ARGUMENT: Tool use is not supported for this model")
+            return FakeResponse()
+
+    class FakeClient:
+        models = FakeModels()
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    from google import genai
+    monkeypatch.setattr(genai, "Client", lambda api_key=None: FakeClient())
+
+    raw = agent._verify_with_grounded_model("Your SIP is losing 2% yearly", "t")
+    assert raw == '{"claims": []}'
+    gemma_calls = [c for c in calls if c[0].startswith("gemma-")]
+    assert gemma_calls[0][1] is True   # grounded attempt first
+    assert gemma_calls[1][1] is False  # ungrounded retry
+    assert gemma_calls[1][0] == GEMMA_FACT_CHECK_FALLBACKS[0]
+
+
+def test_gemma_error_fails_closed(monkeypatch):
+    """A hard error from the Gemma stage halts the gate - no silent pass."""
+    import pytest
+    agent = FactCheckAgent()
+
+    class FakeModels:
+        def generate_content(self, model=None, contents=None, config=None):
+            if model.startswith("gemini-"):
+                raise Exception("404 NOT_FOUND: model no longer available")
+            if bool(getattr(config, "tools", None)):
+                raise Exception("400 INVALID_ARGUMENT: Tool use is not supported for this model")
+            raise Exception("500 INTERNAL")
+
+    class FakeClient:
+        models = FakeModels()
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    from google import genai
+    monkeypatch.setattr(genai, "Client", lambda api_key=None: FakeClient())
+
+    with pytest.raises(Exception, match="500"):
+        agent._verify_with_grounded_model("Your SIP is losing 2% yearly", "t")

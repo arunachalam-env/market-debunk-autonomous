@@ -34,6 +34,22 @@ _BLOCKING_VERDICTS = {"REFUTED", "UNVERIFIABLE"}
 # configured model first, then walk this list on model-not-found errors.
 # gemini-3.1-flash-lite is the last resort: weaker, but has separate free-tier quota.
 FACT_CHECK_MODEL_FALLBACKS = ("gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.1-flash-lite")
+# Gemma is the last resort: separate free-tier quota pool from the Gemini flash
+# models, but no Google-Search grounding - if the API rejects the search tool,
+# the check runs on model knowledge only and the normal blocking rules still
+# apply (UNVERIFIABLE blocks). If Gemma errors out, the gate fails closed.
+GEMMA_FACT_CHECK_FALLBACKS = ("gemma-3-27b-it", "gemma-3-12b-it")
+
+_UNGROUNDED_SUFFIX = (
+    "\n\nNOTE: live web search is unavailable for this check. Verify each claim "
+    "from your own knowledge only. If you cannot confidently confirm a claim "
+    "from reliable knowledge, mark it UNVERIFIABLE."
+)
+
+
+def _tool_unsupported(msg: str) -> bool:
+    m = msg.lower()
+    return "invalid_argument" in m or ("tool" in m and "not supported" in m)
 
 
 @dataclass
@@ -167,27 +183,25 @@ Return strict JSON only:
 {{"claims": [{{"claim": "...", "verdict": "SUPPORTED|REFUTED|UNVERIFIABLE", "reason": "one short sentence with the source basis"}}]}}"""
 
         candidates = [self.model] + [m for m in FACT_CHECK_MODEL_FALLBACKS if m != self.model]
+        candidates += [m for m in GEMMA_FACT_CHECK_FALLBACKS if m not in candidates]
         last_exc: Optional[Exception] = None
         for candidate in candidates:
             for key_index, api_key in enumerate(api_keys):
                 client = genai.Client(api_key=api_key)
                 try:
-                    response = client.models.generate_content(
-                        model=candidate,
-                        contents=prompt,
-                        config=types.GenerateContentConfig(
-                            temperature=0.1,
-                            max_output_tokens=1500,
-                            tools=[types.Tool(google_search=types.GoogleSearch())],
-                        ),
-                    )
-                    if response and response.text:
+                    text, grounded = self._generate_checked(client, candidate, prompt, types)
+                    if text:
                         if candidate != self.model or key_index > 0:
                             log.warning(
                                 "Fact-check succeeded with fallback (model %s, key #%d).",
                                 candidate, key_index + 1,
                             )
-                        return response.text
+                        if not grounded:
+                            log.warning(
+                                "Fact-check ran UNGROUNDED on %s: verdicts are model-knowledge only (no live search).",
+                                candidate,
+                            )
+                        return text
                     last_exc = RuntimeError("empty response from fact-check model")
                 except Exception as exc:
                     last_exc = exc
@@ -203,3 +217,27 @@ Return strict JSON only:
                         break  # next model
                     raise
         raise RuntimeError(f"all fact-check models/keys failed: {last_exc}")
+
+    @staticmethod
+    def _generate_checked(client, candidate: str, prompt: str, types):
+        """One model attempt. Runs search-grounded; for Gemma models (no search
+        tool support) retries once without the tool. Returns (text, grounded)."""
+        def _call(grounded: bool, text: str):
+            kwargs = dict(temperature=0.1, max_output_tokens=1500)
+            if grounded:
+                kwargs["tools"] = [types.Tool(google_search=types.GoogleSearch())]
+            return client.models.generate_content(
+                model=candidate,
+                contents=text,
+                config=types.GenerateContentConfig(**kwargs),
+            )
+
+        try:
+            response = _call(True, prompt)
+            return (response.text if response else None), True
+        except Exception as exc:
+            if candidate.startswith("gemma-") and _tool_unsupported(str(exc)):
+                log.warning("Model %s rejects search grounding; retrying ungrounded.", candidate)
+                response = _call(False, prompt + _UNGROUNDED_SUFFIX)
+                return (response.text if response else None), False
+            raise
