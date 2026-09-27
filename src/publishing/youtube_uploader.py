@@ -97,6 +97,9 @@ def upload_video(
             "status": {
                 "privacyStatus": privacy,
                 "selfDeclaredMadeForKids": False,
+                # YouTube requires disclosing meaningfully synthetic media;
+                # every video here is AI-scripted with a synthetic TTS voice.
+                "containsSyntheticMedia": True,
             },
         }
 
