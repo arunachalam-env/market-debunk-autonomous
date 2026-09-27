@@ -1,12 +1,12 @@
 {
-  "topic_thesis": "Candlestick patterns are nothing more than historical after-the-fact doodles that retail traders mistake for a crystal ball while losing their capital.",
-  "strategic_angle": "Expose the 'Gambler's Fallacy' inherent in technical analysis: show that if patterns actually predicted the future, the 90% of retail traders who use them wouldn't be consistently losing money to institutional algorithms.",
+  "topic_thesis": "A Rights Issue is not a discounted loyalty reward from management, but a corporate shakedown forcing you to inject fresh cash or suffer silent equity dilution.",
+  "strategic_angle": "Expose the 'discount price' illusion of Rights Issues (like Natco). Retail investors celebrate buying shares at a 15-20% discount to market price, oblivious to the fact that new share issuance expands total equity, permanently suppresses Earnings Per Share (EPS), and forces unexercised Rights Entitlements (RE) to expire worthless at \u20b90 if ignored.",
   "format_type": "STANDALONE",
   "hook_style": "HARD_NUMBER_SHOCK",
   "hook_type": "LOSS_IMPLICATION",
-  "key_statistic": "90% of retail traders fail to achieve long-term profitability despite using technical analysis.",
-  "target_emotion": "Skepticism and realization of being scammed by 'get-rich-quick' technical tutorials.",
-  "pinned_comment_text": "How much have you lost chasing 'perfect' chart patterns? Share your story, or comment 'GUIDE' if you want our breakdown on how institutions actually hunt your stop-losses. \ud83d\udcc9\ud83d\udc47",
-  "tamil_adaptation_directive": "Use the hook 'Candlestick pattern-a paathu trade panreengala? Unga panam kariyagum!' Focus on the 'Trade Achievers' style of teaching as a trap. Use terms like 'Charts-a paathu kaasu paakalamnu ninaikrathu periya modhithanam' and 'Institutional algorithms vs Retail traders' logic.",
-  "source_signal": "The desperation of retail traders in the Indian market seeking easy income via F&O and intraday speculation."
+  "key_statistic": "100% total loss on unexercised Rights Entitlements (RE) on expiry date + 15-25% EPS dilution",
+  "target_emotion": "Cynical awakening and urgency to inspect demat accounts for trading Rights Entitlements (RE)",
+  "pinned_comment_text": "Did you think a Rights Issue was a 'reward' for loyal shareholders? Check your Demat for temporary RE credits before they expire at \u20b90! Comment 'RIGHTS' and we'll send you our 3-step checklist to protect your capital. \ud83d\udcac\ud83d\udc47",
+  "tamil_adaptation_directive": "Hook the Tamil retail investor base who follow channels like Money Pechu. Frame the issue bluntly: 'Rights Issue-na company discount offer illa, blackmail!'. Explain how Demat account-la credit aana 'RE' shares sell pannalana zero aayidum with terms like 'EPS Gaali', 'Share Dilution Aabathu', and 'Kadan Adaikka Unga Panam'.",
+  "source_signal": "Audience pain-point & market trend"
 }
