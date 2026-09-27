@@ -237,6 +237,12 @@ Scene 1 — THE QUESTION HOOK (0–4s):
   It must name the EXACT financial product or mechanism being exposed — never generic.
   Word count: 6–11 words. Must contain "you" or "your".
 
+  FIRST 2 SECONDS RULE (decides whether the viewer stays):
+  Front-load the single most shocking VERIFIED element of this video into the first 5 words:
+  a real number/statistic ("Is your SIP quietly losing ₹4,00,000?") or a named entity
+  ("Did Jhunjhunwala really hold Titan through 5 crashes?"). The number/name must come
+  from the sourced story - never invent one. A hook with no number and no name is a weak hook.
+
   HOOK TYPE MENU (one is selected per video by the Channel Director):
     • LOSS_IMPLICATION    → "Is your [product] silently [verb]-ing your [amount/returns]?"
     • COMPETENCE_CHALLENGE → "Do you actually know what your [product] charges you?"

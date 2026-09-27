@@ -263,12 +263,19 @@ class EnglishScriptRewriterAgent:
 
         # Extract the first sentence/clause as the hook
         first_clause = re.split(r"[.!—\n]", narration)[0].strip()
+        original_had_anchor = self._has_shock_anchor(first_clause)
         words = first_clause.split()
 
-        # Enforce word count: 6–11 words
+        # Enforce word count: 6–11 words. Trim filler words first so a
+        # shock anchor (number, named entity) survives the cut; hard-cut
+        # only as a last resort.
+        if len(words) > max_words:
+            words = self._trim_filler(words, max_words)
         if len(words) > max_words:
             first_clause = " ".join(words[:max_words]).rstrip("?,!.")
-        elif len(words) < 6:
+        else:
+            first_clause = " ".join(words)
+        if len(words) < 6:
             first_scene["narration"] = self._make_question_from_topic(topic)
             log.info("  ↳ ScriptDoctor: Hook too short (%d words); replaced with topic-specific question.", len(words))
             return scenes
@@ -291,9 +298,51 @@ class EnglishScriptRewriterAgent:
             first_scene["narration"] = replacement
             return scenes
 
+        # First-2-seconds rule: the hook must still carry a shock anchor if
+        # the model wrote one. Never invent numbers - only preserve or reuse
+        # an anchor that already exists in the model output or topic.
+        if original_had_anchor and not self._has_shock_anchor(first_clause):
+            log.warning(
+                "  ↳ ScriptDoctor: shock anchor (number/name) was lost in repair; restoring model's original hook wording.",
+            )
+            restored = " ".join(re.split(r"[.!—\n]", narration)[0].strip().split()[:max_words]).rstrip("?,!")
+            if not restored.endswith("?"):
+                restored = self._convert_to_question(restored, topic)
+            if self._has_shock_anchor(restored) and not self._is_generic_question(restored):
+                first_clause = restored
+
         first_scene["narration"] = first_clause
         log.info("  ↳ ScriptDoctor: Scene 1 question hook finalised: '%s'", first_clause)
         return scenes
+
+    _FILLER_WORDS = {"actually", "really", "just", "even", "basically", "literally", "simply", "quite"}
+
+    @staticmethod
+    def _trim_filler(words: List[str], max_words: int) -> List[str]:
+        """Drop low-value filler words, keeping every number and named anchor."""
+        trimmed = [w for w in words if w.lower().strip("?,!.") not in EnglishScriptRewriterAgent._FILLER_WORDS]
+        # Never trim below a valid hook; if filler removal went too far, keep the original.
+        if len(trimmed) < 6:
+            return words
+        return trimmed
+
+    @staticmethod
+    def _has_shock_anchor(text: str) -> bool:
+        """True when the hook carries a verifiable shock anchor for the first 2 seconds:
+        a number/statistic, a ₹/% figure, an acronym like SEBI/RBI, or a named entity."""
+        if re.search(r"\d", text):
+            return True
+        if "₹" in text or "%" in text:
+            return True
+        # Acronyms (SEBI, RBI, IPO, EMI) and mid-sentence capitalized names (Buffett, Titan)
+        tokens = text.replace("?", "").split()
+        for i, tok in enumerate(tokens):
+            core = tok.strip(',.:;!' + chr(34) + chr(39))
+            if len(core) >= 2 and core.isupper():
+                return True
+            if i > 0 and core[:1].isupper() and core[1:].islower() and core.lower() not in {"is", "are", "do", "did", "your", "you", "why", "how", "what"}:
+                return True
+        return False
 
     def _convert_to_question(self, statement: str, topic: str = "") -> str:
         """Convert a declarative statement to a personal-implication question."""
