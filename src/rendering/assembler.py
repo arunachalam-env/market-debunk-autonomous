@@ -657,7 +657,7 @@ def mix_bgm(
             f"[0:a]{voice_chain},"
             "aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo,asplit=2[voice_mix][voice_key];"
             f"[1:a]aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo,volume={vol_factor:.4f}[bgm];"
-            "[bgm][voice_key]sidechaincompress=threshold=0.25:ratio=1.25:attack=40:release=200[ducked];"
+            "[bgm][voice_key]sidechaincompress=threshold=0.18:ratio=2.5:attack=25:release=250[ducked];"
             "[voice_mix][ducked]amix=inputs=2:duration=first:dropout_transition=0:normalize=0,"
             "aformat=sample_fmts=fltp:sample_rates=48000:channel_layouts=stereo,"
             "loudnorm=I=-14:TP=-1.0:LRA=7[out]"
