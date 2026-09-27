@@ -144,7 +144,7 @@ jobs:
           SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           STORY_MODE: ${{ vars.STORY_MODE || 'true' }}
-          PIPELINE_PHASE: ${{ github.event_inputs.phase || 'full' }}
+          PIPELINE_PHASE: ${{ github.event.inputs.phase || 'full' }}
           PHASE_A_STATE_DIR: ${{ env.PHASE_A_STATE_DIR }}
           STORY_IMAGES_INBOX: ${{ github.event.inputs.phase == 'produce' && 'data/story_inbox' || '' }}
           GEMINI_IMAGE_API_KEY: ${{ secrets.GEMINI_IMAGE_API_KEY }}
