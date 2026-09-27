@@ -92,8 +92,8 @@ class ScriptPayload(BaseModel):
     @field_validator("scenes")
     @classmethod
     def check_scenes(cls, v):
-        if not (5 <= len(v) <= 7):
-            raise ValueError(f"Script must have exactly 6 scenes (Fast-Hook format), got {len(v)}")
+        if not (6 <= len(v) <= 9):
+            raise ValueError(f"Script must have 6-9 scenes (Fast-Hook format, ~3s per visual), got {len(v)}")
         scene_ids = [scene.scene_id for scene in v]
         expected_ids = list(range(1, len(v) + 1))
         if scene_ids != expected_ids:
@@ -219,7 +219,7 @@ CRITICAL VOCABULARY MANDATE (NO DEAD SHELF JARGON):
 • Spoken sentences must use everyday conversational words that real people speak out loud.
 • Keep clauses short (5 to 8 words per clause) so the voice sounds punchy, dynamic, and never breathless.
 
-TARGET RUNTIME: 22–26 seconds total. 50–70 narration words across all 6 scenes (8–12 words per scene).
+TARGET RUNTIME: 22–26 seconds total. 56–80 narration words across all 8 scenes (6–10 words per scene). Retention rule: the on-screen visual must change every ~3 seconds.
 
 ACCURACY & FORMAT MANDATE (NON-NEGOTIABLE):
 • Every number, date, regulation, and company/investor fact in the script must be REAL and verifiable. Never invent or inflate statistics - a fact-check gate blocks publishing on any refuted or unverifiable claim.
@@ -327,7 +327,7 @@ OUTPUT FORMAT — Return ONLY valid JSON, nothing else, no markdown fences:
   ]
 }
 
-CRITICAL: Exactly 6 scenes. 55–75 total narration words. One seamless 24-second story, NOT a list of facts. Use 'you/your' in at least 3 scenes."""
+CRITICAL: Exactly 8 scenes. 56–80 total narration words. One seamless 24-second story, NOT a list of facts. A new visual every ~3 seconds keeps retention. Use 'you/your' in at least 4 scenes."""
 
 # ──────────────────────────────────────────────────────────────────────────────
 #  JSON Extraction
@@ -509,7 +509,7 @@ def _call_openrouter_failover(user_prompt: str) -> Optional[str]:
     return None
 
 
-def _repair_json(raw_response: str, error: Exception, model_name: str, target_scenes: int = 6) -> str:
+def _repair_json(raw_response: str, error: Exception, model_name: str, target_scenes: int = 8) -> str:
     """Repair an attempted Market Debunk script response when JSON parsing or validation fails."""
     repair_prompt = f"""Repair the following attempted Market Debunk script response into complete valid JSON.
 The previous attempt failed validation with error:
@@ -532,12 +532,12 @@ def generate_script(
     thesis: str,
     channel_name: str,
     story_seed: Optional[dict] = None,
-    target_scenes: int = 6,
+    target_scenes: int = 8,
     question_hook: str = "",
     forbidden_claims: Optional[list] = None,
 ) -> ScriptPayload:
     """
-    Generate a Fast-Hook cinematic story script under 30 seconds (target 6 scenes, 55-75 words).
+    Generate a Fast-Hook cinematic story script under 30 seconds (target 8 scenes, 56–80 words).
     question_hook: Pre-crafted specific question from QuestionCraftingAgent. If provided,
                    injected as mandatory Scene 1 narration seed into the LLM prompt.
     """
@@ -602,7 +602,7 @@ Before answering, internally check that:
 - scene 1 visual_prompt opens cold on dramatic evidence (crashing red candlestick chart, trading screen, bank alert);
 - scenes 2-{target_scenes-1} describe contextual B-roll objects, screens, or documents with broll_keyword (NO people);
 - scene {target_scenes} delivers the sharp takeaway rule and spoken CTA;
-- the total narration across all {target_scenes} scenes is 55-75 words (target 22-26 seconds runtime)."""
+- the total narration across all {target_scenes} scenes is 56–80 words (target 22–26 seconds runtime; a fresh visual every ~3 seconds)."""
 
     for model in _MODELS_PRIORITY:
         log.info("Trying model (Gemma/Gemini API): %s", model)

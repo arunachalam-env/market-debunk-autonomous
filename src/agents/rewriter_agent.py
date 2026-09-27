@@ -111,7 +111,7 @@ class EnglishScriptRewriterAgent:
         failure_reason: str,
         failure_details: Optional[Dict[str, Any]] = None,
         topic: str = "",
-        target_scenes: int = 5,
+        target_scenes: int = 8,
     ) -> Dict[str, Any]:
         """
         Attempt an intelligent LLM rewrite with evaluator critique.
@@ -140,7 +140,7 @@ class EnglishScriptRewriterAgent:
             "   - ZERO text overlays, logos, or watermarks.\n"
             "4. SEAMLESS ALGORITHMIC LOOP:\n"
             "   - Scene 5 CTA must end with a natural connector phrase leading smoothly back into Scene 1.\n"
-            f"5. Target exactly {target_scenes} scenes fitting 22-26 seconds total.\n"
+            f"5. Target {target_scenes} scenes fitting 22-26 seconds total (visual change every ~3s).\n"
         )
 
         user_prompt = (
@@ -455,10 +455,10 @@ class EnglishScriptRewriterAgent:
                 s["broll_keyword"] = broll_category_map[cat]
         return scenes
 
-    def _fix_scene_count(self, scenes: List[Dict[str, Any]], target_count: int = 5) -> List[Dict[str, Any]]:
-        """Ensure scene count is between 5 and 6 scenes."""
-        if len(scenes) < 5:
-            while len(scenes) < 5:
+    def _fix_scene_count(self, scenes: List[Dict[str, Any]], target_count: int = 8) -> List[Dict[str, Any]]:
+        """Ensure scene count lands in the 6-9 Fast-Hook window (~3s visuals)."""
+        if len(scenes) < 6:
+            while len(scenes) < 6:
                 idx = len(scenes) + 1
                 new_scene = copy.deepcopy(scenes[-1])
                 new_scene["scene_id"] = idx
@@ -466,8 +466,8 @@ class EnglishScriptRewriterAgent:
                 new_scene["visual_prompt"] = "Macro lens on glowing calculator screen, cinematic contrast, 35mm film grain"
                 new_scene["broll_keyword"] = "financial calculation"
                 scenes.append(new_scene)
-        elif len(scenes) > 6:
-            scenes = scenes[:6]
+        elif len(scenes) > 9:
+            scenes = scenes[:9]
 
         # Normalize scene_ids sequentially (1-indexed)
         for i, s in enumerate(scenes):
