@@ -221,6 +221,11 @@ CRITICAL VOCABULARY MANDATE (NO DEAD SHELF JARGON):
 
 TARGET RUNTIME: 22–26 seconds total. 50–70 narration words across all 6 scenes (8–12 words per scene).
 
+ACCURACY & FORMAT MANDATE (NON-NEGOTIABLE):
+• Every number, date, regulation, and company/investor fact in the script must be REAL and verifiable. Never invent or inflate statistics - a fact-check gate blocks publishing on any refuted or unverifiable claim.
+• When the topic names a famous investor (Buffett, Munger, Jhunjhunwala, Kedia, Damani, Pabrai, Lynch) or a specific listed stock, anchor the script on that real story - audiences engage with named people and real stocks, not abstract warnings.
+• All visuals are licensed stock clips or AI-generated images. Never write visual prompts requiring third-party footage, news clips, or real footage of any person.
+
 ──────────────────────────────────────────────────────────────────────────────
 THE 6-SCENE CONVERSATIONAL RETENTION ARC
 ──────────────────────────────────────────────────────────────────────────────

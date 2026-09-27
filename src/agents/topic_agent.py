@@ -58,6 +58,22 @@ _SERP_MARKET_QUERIES = (
     "F&O margin rules contract size hike retail impact India",
 )
 
+_SERP_INVESTOR_QUERIES = (
+    # Named-investor and specific-stock stories - the formats this channel's
+    # audience actually watches (Buffett/Munger/Kedia/Jhunjhunwala clips and
+    # single-stock news outperformed generic outrage topics by 100x+).
+    "Rakesh Jhunjhunwala portfolio stock latest buy sell India",
+    "Vijay Kedia portfolio new stock pick multibagger India",
+    "Radhakishan Damani DMart Avenue Supermarts stock news India",
+    "Warren Buffett Berkshire latest investment lesson value investing",
+    "Ashish Kacholia Dolly Khanna portfolio stock change India",
+    "NSE stock quarterly results surprise profit collapse retail trap India",
+    "famous investor sells stake block deal NSE midcap India",
+    "Mohnish Pabrai Porinju Veliyath stock thesis India",
+    "specific NSE stock promoter pledge increase crash India",
+    "SME IPO listing day crash retail investors stuck India",
+)
+
 _SERP_CONSUMER_QUERIES = (
     "credit card hidden charges annual fee trap India",
     "health insurance claim rejection rules room rent capping India",
@@ -117,6 +133,28 @@ _EVERGREEN_MARKET_TOPICS = (
     "Chasing foreign stock investing through high-fee feeder funds introduces severe currency conversion and tax deduction drag.",
     "P/E ratio without checking cash flows allows manipulative accounting to disguise deeply overvalued companies as cheap.",
     "Retail algorithmic copy trading platforms allow providers to front-run subscriber orders for private profit.",
+)
+
+_EVERGREEN_INVESTOR_TOPICS = (
+    # Documented, verifiable lessons from famous investors and real NSE stock
+    # episodes - the content style that built this channel's subscriber base.
+    # Every entry is a checkable historical fact, not an invented statistic.
+    "Warren Buffett's See's Candies purchase taught that pricing power, not cheap valuation, is the real moat retail investors ignore.",
+    "Charlie Munger's inversion principle says avoiding stupid bets beats finding brilliant ones, which is why retail F&O losses compound.",
+    "Rakesh Jhunjhunwala held Titan for over two decades through multiple 30% crashes while retail investors sold at every correction.",
+    "Vijay Kedia's SMILE framework bets on small companies with honest management instead of chasing large-cap names everyone already owns.",
+    "Radhakishan Damani built DMart on thin margins and owned stores, proving boring execution beats flashy expansion stories.",
+    "Mohnish Pabrai's 'heads I win, tails I don't lose much' asymmetry is the opposite of retail traders risking everything on one tip.",
+    "Peter Lynch's 'buy what you know' is the most misquoted rule in investing - his real rule was research the balance sheet first.",
+    "Yes Bank's collapse wiped out retail investors who kept averaging down on a falling knife because the price 'looked cheap'.",
+    "Paytm's IPO crashed 27% on listing day, showing how anchor-investor hype transfers wealth from retail applicants to early backers.",
+    "Asian Paints' dealer network moat let it dominate for decades while competitors with bigger ad budgets kept failing.",
+    "Suzlon's repeated dilutions turned a retail favourite into a penny stock, proving turnaround stories need debt math, not hope.",
+    "DHFL and IL&FS showed that even 'safe' AAA-rated debt can collapse, and credit-risk funds hid that risk in fine print.",
+    "IRCTC's listing-day frenzy rewarded flippers, but retail investors who chased the post-listing spike bought the exact top.",
+    "Buffett's 'be fearful when others are greedy' explains why record IPO subscription numbers mark market tops, not bottoms.",
+    "Eicher Motors' Royal Enfield turnaround worked because Siddhartha Lal killed 13 of 15 products - focus, not diversification.",
+    "Jhunjhunwala's biggest wins came from buying boring businesses when nobody wanted them, not from trading hot momentum stocks.",
 )
 
 _EVERGREEN_CONSUMER_TOPICS = (
@@ -774,7 +812,7 @@ def _discover_from_serp(target_domain: Optional[str] = None) -> Optional[dict]:
 
     # Select queries according to target domain
     if target_domain == "MARKET_INVESTING":
-        query_pool = list(_SERP_MARKET_QUERIES)
+        query_pool = list(_SERP_MARKET_QUERIES) + list(_SERP_INVESTOR_QUERIES)
     elif target_domain == "CONSUMER_DEFENSE":
         query_pool = list(_SERP_CONSUMER_QUERIES)
     else:
@@ -970,7 +1008,10 @@ def discover_topic(day_override: Optional[int] = None) -> dict:
 
     # Step 4: Curated Evergreen Fallback (Guarantees zero downtime & 100% anti-repetition)
     log.info("Selecting unduplicated evergreen topic for domain '%s'...", target_domain)
-    topic_pool = _EVERGREEN_MARKET_TOPICS if target_domain == "MARKET_INVESTING" else _EVERGREEN_CONSUMER_TOPICS
+    if target_domain == "MARKET_INVESTING":
+        topic_pool = _EVERGREEN_MARKET_TOPICS + _EVERGREEN_INVESTOR_TOPICS
+    else:
+        topic_pool = _EVERGREEN_CONSUMER_TOPICS
 
     import random
     shuffled_pool = list(topic_pool)

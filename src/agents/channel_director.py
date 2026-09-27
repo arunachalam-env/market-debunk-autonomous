@@ -260,6 +260,7 @@ Your goal: Maximize 30-second view retention, direct-message shares, and comment
 SLOT MANDATE:
 - Slot Domain: {slot_domain}
   * If MARKET_INVESTING (Morning): Strictly Indian Stock Market, F&O options traps, SEBI warnings, mutual fund expense drag, SME IPO manipulation, algorithmic stop-loss hunting, pump-and-dump scams.
+  * STRONGLY PREFER stories anchored on a NAMED famous investor (Buffett, Munger, Jhunjhunwala, Kedia, Damani, Pabrai, Lynch) or a SPECIFIC NSE-listed stock with a documented episode - that is the format this channel's audience actually watches. Generic outrage topics underperform by 100x.
   * If CONSUMER_DEFENSE (Evening): Strictly everyday middle-class money traps: Zero-Cost EMI 18% GST leak, credit card minimum due compounding, CIBIL drops, hospital insurance room-rent caps, EPFO claim rejection penalties, debit card AMC deductions.
 
 LIVE MARKET PULSE SIGNALS (Real-time news & community discussions):
@@ -274,7 +275,9 @@ DIRECTOR INSTRUCTIONS:
 3. State the exact numeric calculation or statistic (e.g. "₹15,00,000 lost in 25 years", "18% GST on interest", "6% penalty").
 4. Provide an engaging pinned comment that asks a controversial question or offers a checklist for commenting "GUIDE".
 5. Provide a specific 'tamil_adaptation_directive' describing how the Tamil companion should localize the concept with popular Tanglish terms (e.g. "Direct vs Regular Fund", "CIBIL Score Gaali", "Zero Cost EMI Aabathu").
-6. Select the exact 'hook_type' for Scene 1 from EXACTLY one of these options:
+6. ACCURACY IS NON-NEGOTIABLE: every statistic in your brief must be real and verifiable from the sourced story or public record. Never invent numbers to make the angle punchier - a separate fact-check gate will block the video.
+7. VISUALS RULE: all visuals are licensed stock clips or AI-generated images. Never plan around third-party footage, news clips, or videos of real investors - using them is a copyright and monetization risk.
+8. Select the exact 'hook_type' for Scene 1 from EXACTLY one of these options:
    - LOSS_IMPLICATION   → Use when the video exposes a hidden fee, silent deduction, or ongoing financial leak affecting the viewer NOW.
    - COMPETENCE_CHALLENGE → Use when the video tests whether the viewer actually understands their own financial product.
    - MYTH_BUST          → Use when the video corrects a widespread false belief about a product or regulation.
