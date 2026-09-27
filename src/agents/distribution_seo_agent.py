@@ -102,8 +102,8 @@ class PlatformDistributionPackage(BaseModel):
             f"{takeaways_formatted}\n\n"
             f"📌 DISCLAIMER: Educational analysis only. We expose structural market realities.\n\n"
             f"{tags_line}\n\n"
-            "🎵 Music: Kevin MacLeod (incompetech.com) - \"Dark Times\" / \"Night Vigil\" / \"Crypto\". "
-            "Licensed under Creative Commons: By Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/)"
+            "🎵 Music: Cinematic Tension - Tensions Run High by #Soundridemusic "
+            "(https://www.youtube.com/@Soundridemusic). Free to use with credit per soundridemusic.com terms."
         )
 
     def get_instagram_caption(self) -> str:
