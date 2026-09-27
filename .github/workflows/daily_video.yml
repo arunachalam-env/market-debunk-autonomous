@@ -133,11 +133,11 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          for f in data/used_topics.json data/channel_ids.json data/used_broll.json data/publish_ledger.json data/analytics_ledger.json data/deprecated_patterns.json data/tuning_playbook.json data/strategic_brief.json; do
+          for f in data/used_topics.json data/used_questions.json data/channel_ids.json data/used_broll.json data/publish_ledger.json data/analytics_ledger.json data/deprecated_patterns.json data/tuning_playbook.json data/strategic_brief.json; do
             [ -f "$f" ] && git add "$f"
           done
           # Only commit if there are changes
-          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update topic, analytics, tuning playbook, and dedup history [skip ci]" && (git pull origin master --rebase -X ours || true) && git push origin master)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update topic, analytics, tuning playbook, and dedup history [skip ci]" && (git pull origin master --rebase --autostash -X ours || true) && git push origin master)
 
       - name: Trigger Tamil companion pipeline
         if: success()
