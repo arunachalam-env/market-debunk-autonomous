@@ -35,6 +35,11 @@ on:
         required: false
         default: ''
         type: string
+      pack_url:
+        description: '(produce) Direct URL to scenes.tar.gz of externally rendered scene images (alternative to image_pack release tag)'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   run-pipeline:
@@ -124,7 +129,11 @@ jobs:
         run: |
           mkdir -p data/story_inbox
           rm -f data/story_inbox/scene_*.png
-          gh release download "${{ github.event.inputs.image_pack }}" -p "scenes.tar.gz" --clobber
+          if [ -n "${{ github.event.inputs.image_pack }}" ]; then
+            gh release download "${{ github.event.inputs.image_pack }}" -p "scenes.tar.gz" --clobber
+          else
+            curl -fL "${{ github.event.inputs.pack_url }}" -o scenes.tar.gz
+          fi
           tar -xzf scenes.tar.gz -C data/story_inbox
           ls -la data/story_inbox
 
@@ -144,7 +153,10 @@ jobs:
           SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           STORY_MODE: ${{ vars.STORY_MODE || 'true' }}
-          PIPELINE_PHASE: ${{ github.event.inputs.phase || 'full' }}
+          # IMAGES-PROVIDED MODE (owner instruction 2026-09-27, default for 14 days -> revert after 2026-10-11):
+          # scheduled runs PREPARE only (no Gemini image calls ever); Instinct renders the scenes
+          # externally and dispatches phase=produce with pack_url/state_run_id to assemble+publish.
+          PIPELINE_PHASE: ${{ github.event.inputs.phase || (github.event_name == 'schedule' && 'prepare' || 'full') }}
           PHASE_A_STATE_DIR: ${{ env.PHASE_A_STATE_DIR }}
           STORY_IMAGES_INBOX: ${{ github.event.inputs.phase == 'produce' && 'data/story_inbox' || '' }}
           GEMINI_IMAGE_API_KEY: ${{ secrets.GEMINI_IMAGE_API_KEY }}
@@ -180,12 +192,20 @@ jobs:
 
       - name: Upload Phase A State Artifact (prepare mode)
         uses: actions/upload-artifact@v4
-        if: github.event_name == 'workflow_dispatch' && github.event.inputs.phase == 'prepare'
+        if: (github.event_name == 'workflow_dispatch' && github.event.inputs.phase == 'prepare') || github.event_name == 'schedule'
         with:
           name: phase-a-state
           path: |
             output/**
             !output/visual_cache/**
+          retention-days: 2
+
+      - name: Upload Phase A manifest (prepare mode)
+        uses: actions/upload-artifact@v4
+        if: (github.event_name == 'workflow_dispatch' && github.event.inputs.phase == 'prepare') || github.event_name == 'schedule'
+        with:
+          name: phase-a-manifest
+          path: output/**/phase_a_state.json
           retention-days: 2
 
       - name: Upload Tamil master visual package
@@ -208,7 +228,8 @@ jobs:
           git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update topic, analytics, tuning playbook, and dedup history [skip ci]" && (git pull origin master --rebase --autostash -X ours || true) && git push origin master)
 
       - name: Trigger Tamil companion pipeline
-        if: success() && github.event.inputs.skip_publish != 'true' && github.event.inputs.phase != 'prepare' 
+        # TAMIL_ENABLED var stays unset/off until the user picks the Tamil voice clone (2026-09-27 rule)
+        if: success() && vars.TAMIL_ENABLED == 'true' && github.event.inputs.skip_publish != 'true' && github.event.inputs.phase != 'prepare' 
         env:
           GH_TOKEN: ${{ secrets.TAMIL_WORKFLOW_TOKEN }}
         run: |
