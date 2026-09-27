@@ -101,7 +101,9 @@ class PlatformDistributionPackage(BaseModel):
             f"KEY TAKEAWAYS:\n"
             f"{takeaways_formatted}\n\n"
             f"📌 DISCLAIMER: Educational analysis only. We expose structural market realities.\n\n"
-            f"{tags_line}"
+            f"{tags_line}\n\n"
+            "🎵 Music: Kevin MacLeod (incompetech.com) - \"Dark Times\" / \"Night Vigil\" / \"Crypto\". "
+            "Licensed under Creative Commons: By Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/)"
         )
 
     def get_instagram_caption(self) -> str:
