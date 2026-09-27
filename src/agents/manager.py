@@ -44,13 +44,13 @@ def run_pipeline():
     visuals_dir = run_dir / "visuals"
     
     log.info("==================================================")
-    log.info("🚀 STARTING PIPELINE RUN: %s", run_id)
+    log.info("ð STARTING PIPELINE RUN: %s", run_id)
     log.info("==================================================")
     
     total_start = time.time()
     stats = {}
 
-    # ── Phase 0: Analytics Sensor, Performance Tuner & Timing Guard ──
+    # ââ Phase 0: Analytics Sensor, Performance Tuner & Timing Guard ââ
     from src.analytics.analytics_sensor import AnalyticsSensor
     from src.analytics.tuner_agent import PerformanceTuningAgent
     from src.timing.timing_guard import TimingGuard
@@ -58,7 +58,7 @@ def run_pipeline():
     sensor = AnalyticsSensor()
     try:
         audit_res = sensor.audit_recent_posts()
-        log.info("✓ 48h Analytics sensor run: %s", audit_res)
+        log.info("â 48h Analytics sensor run: %s", audit_res)
     except Exception as audit_err:
         log.warning("Analytics audit skipped (%s)", audit_err)
 
@@ -66,7 +66,7 @@ def run_pipeline():
     try:
         playbook = tuner.generate_playbook()
         log.info(
-            "✓ Performance Tuning Playbook ready: optimal runtime %.1fs, %d target words",
+            "â Performance Tuning Playbook ready: optimal runtime %.1fs, %d target words",
             playbook.get("optimal_runtime_seconds", 24.0),
             playbook.get("optimal_word_count", 62),
         )
@@ -76,7 +76,7 @@ def run_pipeline():
     timing_guard = TimingGuard()
     can_proceed, hours_elapsed = timing_guard.check_cooldown(min_hours=3.0)
     if not can_proceed:
-        log.warning("🛑 Cooldown active (%.1f h elapsed < 3.0h min). Exiting pipeline to protect feed reach.", hours_elapsed)
+        log.warning("ð Cooldown active (%.1f h elapsed < 3.0h min). Exiting pipeline to protect feed reach.", hours_elapsed)
         sys.exit(0)
 
     timing_guard.apply_jitter(min_seconds=5, max_seconds=20)
@@ -84,7 +84,7 @@ def run_pipeline():
     try:
         pipeline_phase = (os.environ.get("PIPELINE_PHASE", "full") or "full").strip().lower()
         if pipeline_phase == "produce":
-            # ── Produce mode: restore Phase A state, skip discovery/script/voice ──
+            # ââ Produce mode: restore Phase A state, skip discovery/script/voice ââ
             import json as _json
             from types import SimpleNamespace
             state_dir = Path((os.environ.get("PHASE_A_STATE_DIR") or "").strip() or ".")
@@ -119,7 +119,7 @@ def run_pipeline():
             log.info("Produce mode: restored Phase A state for run %s (%d scenes)", state.get("run_id"), len(script_dict.get("scenes", [])))
         else:
 
-            # ── Phase 1: Topic Discovery (Battle-Tested Real-World Sourcing) ──
+            # ââ Phase 1: Topic Discovery (Battle-Tested Real-World Sourcing) ââ
             # Scans 7 Indian YouTube channels (Money Pechu, PR Sundar, etc.) + 24h Google News via SerpApi
             with PhaseTimer("Phase 1: Topic Discovery"):
                 topic_data = topic_agent.discover_topic()
@@ -131,7 +131,7 @@ def run_pipeline():
                 log.info("Core thesis: %s", thesis)
                 log.info("Story seed concept: %s", story_seed.get("concept_name", "N/A"))
 
-            # ── Phase 1.2: Autonomous Channel Director LLM Strategic Layer ────
+            # ââ Phase 1.2: Autonomous Channel Director LLM Strategic Layer ââââ
             # Operates directly ON TOP OF the freshly sourced real-world story
             director = None
             strategic_brief = None
@@ -143,17 +143,17 @@ def run_pipeline():
                     # Elevate thesis with the Director's cynical framing while keeping real-world source_id
                     thesis = strategic_brief.topic_thesis
                     topic_data["thesis"] = thesis
-                    log.info("✓ Channel Director Strategic Brief elevated topic: '%s'", thesis)
+                    log.info("â Channel Director Strategic Brief elevated topic: '%s'", thesis)
                     log.info("Strategic Angle: %s", strategic_brief.strategic_angle)
             except Exception as dir_err:
                 log.warning("Director Agent brief notice (%s); proceeding with raw sourced topic", dir_err)
                 strategic_brief = None
 
-            # ── Phase 1.5: Dedup Gate ─────────────────────────────────────────
+            # ââ Phase 1.5: Dedup Gate âââââââââââââââââââââââââââââââââââââââââ
             with PhaseTimer("Phase 1.5: Dedup Gate"):
                 is_dup, score, match = evaluator.is_duplicate(thesis)
                 if is_dup:
-                    log.warning("🛑 Topic is too similar to '%s' (score %.2f). Switching to fresh evergreen seed...", match, score)
+                    log.warning("ð Topic is too similar to '%s' (score %.2f). Switching to fresh evergreen seed...", match, score)
                     from src.agents.topic_agent import _EVERGREEN_TOPICS, summarize_to_story_seed
                     found_fresh = False
                     for eg in _EVERGREEN_TOPICS:
@@ -163,7 +163,7 @@ def run_pipeline():
                             channel = "Market Debunk Research"
                             seed_data = summarize_to_story_seed(f"FINANCIAL CONCEPT: {eg}", eg)
                             story_seed = seed_data.get("story_seed", {})
-                            log.info("✓ Switched to fresh evergreen topic: '%s'", thesis)
+                            log.info("â Switched to fresh evergreen topic: '%s'", thesis)
                             found_fresh = True
                             break
                     if not found_fresh:
@@ -171,11 +171,11 @@ def run_pipeline():
                         sys.exit(0)
                 log.info("Topic passed uniqueness check.")
 
-            # ── Phase 2: Script Generation (with Script Doctor) ───────────────
+            # ââ Phase 2: Script Generation (with Script Doctor) âââââââââââââââ
             with PhaseTimer("Phase 2: Script Generation"):
                 rewriter = EnglishScriptRewriterAgent()
 
-                # ── Phase 1.75: Question Crafting (Anti-Repetition Hook) ──────
+                # ââ Phase 1.75: Question Crafting (Anti-Repetition Hook) ââââââ
                 question_hook = ""
                 if bool(getattr(settings, "STORY_MODE", False)):
                     log.info("Story mode: paradox cold-open replaces the question hook; skipping QuestionCraftingAgent.")
@@ -190,7 +190,7 @@ def run_pipeline():
                         hook_type=hook_type,
                         topic_keywords=topic_keywords,
                     )
-                    log.info("✓ QuestionCraftingAgent: Hook crafted → '%s'", question_hook)
+                    log.info("â QuestionCraftingAgent: Hook crafted â '%s'", question_hook)
                 except Exception as q_err:
                     log.warning(
                         "QuestionCraftingAgent notice (%s); rewriter + Pydantic validator will enforce question format as fallback.",
@@ -206,7 +206,7 @@ def run_pipeline():
                 # enforce unique visual prompts, and attach seamless curiosity loop connector.
                 script_dict = rewriter.auto_repair_script(script_dict, topic=thesis)
 
-                # ── Phase 2.5: Pre-publication Fact-Check Gate ─────────────
+                # ââ Phase 2.5: Pre-publication Fact-Check Gate âââââââââââââ
                 # Nothing reaches TTS, rendering, or any platform with unverified
                 # claims. Fail-closed: an unrunnable check also halts the run.
                 if settings.FACT_CHECK_ENABLED:
@@ -295,21 +295,21 @@ def run_pipeline():
                                             fc_result = fc_agent.check_script(script_dict, thesis=thesis, source_excerpt=str(story_seed.get("source_excerpt", "")))
                                     if fc_result.passed:
                                         retried = True
-                                        log.info("✓ Replacement topic passed the fact-check gate: '%s'", script_dict.get("title", ""))
+                                        log.info("â Replacement topic passed the fact-check gate: '%s'", script_dict.get("title", ""))
                                         break
                                 except SystemExit:
                                     raise
                                 except Exception as thin_err:
                                     log.warning("Thin-topic retry %d failed (%s); trying next.", _thin_attempt + 1, thin_err)
                             if not retried:
-                                log.warning("🛑 FACT-CHECK GATE: halting run before any publishing. %s", fc_result.summary())
+                                log.warning("ð FACT-CHECK GATE: halting run before any publishing. %s", fc_result.summary())
                                 if settings.ENABLE_TELEGRAM:
                                     try:
                                         telegram_notifier.send_completion_notification(
                                             title=script_dict.get("title", "(untitled)"),
                                             thesis=thesis,
                                             custom_message=(
-                                                "🛑 Today's Short was blocked by the fact-check gate.\n\n"
+                                                "ð Today's Short was blocked by the fact-check gate.\n\n"
                                                 + fc_result.summary()[:700]
                                             ),
                                         )
@@ -333,7 +333,7 @@ def run_pipeline():
                         if clean_title.lower().startswith(keyword.lower()):
                             clean_title = clean_title[len(keyword):].strip(" :|-")
                         script_dict["title"] = format_high_reach_title(keyword, f"Exposing {clean_title}", max_length=55)
-                    log.info("✓ Auto-corrected title to: '%s'", script_dict["title"])
+                    log.info("â Auto-corrected title to: '%s'", script_dict["title"])
 
                 # Preflight timing before any TTS or visual generation.
                 estimated_seconds = sum(
@@ -351,7 +351,7 @@ def run_pipeline():
                 script_path.write_text(json.dumps(script_dict, indent=2), encoding="utf-8")
 
 
-            # ── Phase 3: Voice Synthesis ──────────────────────────────────────
+            # ââ Phase 3: Voice Synthesis ââââââââââââââââââââââââââââââââââââââ
             with PhaseTimer("Phase 3: Voice Synthesis"):
                 voice_results = voice_agent.synthesize_all_scenes(script_dict["scenes"], audio_dir)
                 stats["total_duration"] = sum(r["duration"] for r in voice_results)
@@ -359,7 +359,7 @@ def run_pipeline():
 
 
             if pipeline_phase == "prepare":
-                # ── Prepare mode: persist state and stop before visuals ──
+                # ââ Prepare mode: persist state and stop before visuals ââ
                 import json as _json
                 state = {
                     "run_id": run_id,
@@ -385,7 +385,7 @@ def run_pipeline():
                 log.info("Prepare mode: Phase A state saved to %s; stopping before visuals.", run_dir / "phase_a_state.json")
                 sys.exit(0)
 
-        # ── Phase 4: Visual Sourcing ──────────────────────────────────────
+        # ââ Phase 4: Visual Sourcing ââââââââââââââââââââââââââââââââââââââ
         with PhaseTimer("Phase 4: Visual Sourcing"):
             visual_results = visual_agent.source_all_visuals(
                 script_dict["scenes"], visuals_dir, story_seed=story_seed
@@ -401,12 +401,12 @@ def run_pipeline():
                 script_dict,
                 visual_results,
                 source_id=topic_data.get("source_id", ""),
-                strategic_brief=strategic_brief.model_dump() if strategic_brief else None,
+                strategic_brief=(strategic_brief.model_dump() if hasattr(strategic_brief, "model_dump") else vars(strategic_brief)) if strategic_brief else None,
                 source_excerpt=str(story_seed.get("source_excerpt", "")),
             )
             log.info("Exported Tamil companion visual package: %s", master_package)
 
-        # ── Phase 5: FFmpeg Assembly ──────────────────────────────────────
+        # ââ Phase 5: FFmpeg Assembly ââââââââââââââââââââââââââââââââââââââ
         with PhaseTimer("Phase 5: Video Assembly"):
             import random
             
@@ -434,7 +434,7 @@ def run_pipeline():
             )
             quality_gate.validate_rendered_video(final_video)
 
-        # ── Phase 6: Post-Processing & Recording ──────────────────────────
+        # ââ Phase 6: Post-Processing & Recording ââââââââââââââââââââââââââ
         with PhaseTimer("Phase 6: Logging & Record keeping"):
             evaluator.record_topic(thesis)
             evaluator.record_title(script_dict["title"])
@@ -442,7 +442,7 @@ def run_pipeline():
             evaluator.record_source_id(topic_data.get("source_id", ""))
             log.info("Recorded topic to prevent future duplicates.")
 
-        # ── Phase 6.5: SEO & Distribution Engineering ─────────────────────
+        # ââ Phase 6.5: SEO & Distribution Engineering âââââââââââââââââââââ
         with PhaseTimer("Phase 6.5: SEO & Distribution Engineering"):
             from src.agents.distribution_seo_agent import DistributionSEOAgent
             seo_agent = DistributionSEOAgent()
@@ -451,12 +451,12 @@ def run_pipeline():
                 script_dict=script_dict,
                 topic_data=topic_data,
             )
-            log.info("✓ Multi-platform SEO Distribution Package generated successfully.")
-            # Run 3 SEO Super Subagents: YouTube → Instagram → Facebook
+            log.info("â Multi-platform SEO Distribution Package generated successfully.")
+            # Run 3 SEO Super Subagents: YouTube â Instagram â Facebook
             dist_pkg = seo_agent.post_process(dist_pkg, thesis, script_dict)
-            log.info("✓ RapidAPI SEO enhancement pass complete.")
+            log.info("â RapidAPI SEO enhancement pass complete.")
 
-        # ── Phase 7: Publishing ───────────────────────────────────────────
+        # ââ Phase 7: Publishing âââââââââââââââââââââââââââââââââââââââââââ
         with PhaseTimer("Phase 7: Publishing"):
             yt_url = None
             yt_id = None
@@ -541,14 +541,14 @@ def run_pipeline():
 
         total_time = time.time() - total_start
         log.info("==================================================")
-        log.info("✅ PIPELINE COMPLETED SUCCESSFULLY in %.1fs", total_time)
+        log.info("â PIPELINE COMPLETED SUCCESSFULLY in %.1fs", total_time)
         log.info("Output Video: %s", final_video.resolve())
         log.info("==================================================")
 
     except SystemExit:
         log.info("Pipeline halted normally.")
     except Exception as exc:
-        log.exception("❌ PIPELINE FAILED FATALLY: %s", exc)
+        log.exception("â PIPELINE FAILED FATALLY: %s", exc)
         sys.exit(1)
 
 
