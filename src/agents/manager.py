@@ -242,20 +242,80 @@ def run_pipeline():
                     if not fc_result.passed:
                         blocking = fc_result.check_ran or settings.FACT_CHECK_REQUIRED
                         if blocking:
-                            log.warning("🛑 FACT-CHECK GATE: halting run before any publishing. %s", fc_result.summary())
-                            if settings.ENABLE_TELEGRAM:
+                            # Thin-source topic fallback (root-cause fix 2026-09-27: gate blocks came from claims beyond the banked source):
+                            # a gate-blocked topic is treated as too thin to support the
+                            # 7-beat script. Consume the next banked topic and retry the
+                            # script+gate chain (bounded: 2 fresh topics), never pad with
+                            # unverifiable claims. Halts as before if all retries fail.
+                            retried = False
+                            for _thin_attempt in range(2):
+                                log.warning(
+                                    "Fact-check gate blocked topic '%s' - source too thin; consuming next banked topic (attempt %d/2).",
+                                    thesis, _thin_attempt + 1,
+                                )
                                 try:
-                                    telegram_notifier.send_completion_notification(
-                                        title=script_dict.get("title", "(untitled)"),
-                                        thesis=thesis,
-                                        custom_message=(
-                                            "🛑 Today's Short was blocked by the fact-check gate.\n\n"
-                                            + fc_result.summary()[:700]
-                                        ),
-                                    )
-                                except Exception as tg_err:
-                                    log.warning("Telegram fact-check notice failed: %s", tg_err)
-                            sys.exit(0)
+                                    topic_data = topic_agent.discover_topic()
+                                    channel = topic_data["channel"]
+                                    video_id = topic_data["video_id"]
+                                    thesis = topic_data["thesis"]
+                                    story_seed = topic_data.get("story_seed", {})
+                                    log.info("Chosen channel: %s", channel)
+                                    log.info("Core thesis: %s", thesis)
+                                    try:
+                                        from src.agents.channel_director import ChannelDirectorAgent
+                                        director = ChannelDirectorAgent()
+                                        strategic_brief = director.formulate_strategic_brief(topic_data=topic_data)
+                                        if strategic_brief and strategic_brief.topic_thesis:
+                                            thesis = strategic_brief.topic_thesis
+                                            topic_data["thesis"] = thesis
+                                    except Exception as dir_err2:
+                                        log.warning("Director brief notice (%s); proceeding with raw topic", dir_err2)
+                                        strategic_brief = None
+                                    dup2, score2, match2 = evaluator.is_duplicate(thesis)
+                                    if dup2:
+                                        log.warning("Replacement topic also duplicates history ('%s', %.2f); trying another.", match2, score2)
+                                        continue
+                                    script = script_agent.generate_script(thesis, channel, story_seed=story_seed, question_hook="")
+                                    script_dict = script_agent.script_to_dict(script)
+                                    script_dict = rewriter.auto_repair_script(script_dict, topic=thesis)
+                                    fc_result = fc_agent.check_script(script_dict, thesis=thesis, source_excerpt=str(story_seed.get("source_excerpt", "")))
+                                    if not fc_result.passed and fc_result.check_ran and fc_result.blocking_claims:
+                                        forbidden2 = [
+                                            str(c.get("claim", "")).strip()
+                                            for c in fc_result.blocking_claims
+                                            if str(c.get("claim", "")).strip()
+                                        ]
+                                        if forbidden2:
+                                            script = script_agent.generate_script(
+                                                thesis, channel, story_seed=story_seed,
+                                                question_hook="", forbidden_claims=forbidden2,
+                                            )
+                                            script_dict = script_agent.script_to_dict(script)
+                                            script_dict = rewriter.auto_repair_script(script_dict, topic=thesis)
+                                            fc_result = fc_agent.check_script(script_dict, thesis=thesis, source_excerpt=str(story_seed.get("source_excerpt", "")))
+                                    if fc_result.passed:
+                                        retried = True
+                                        log.info("✓ Replacement topic passed the fact-check gate: '%s'", script_dict.get("title", ""))
+                                        break
+                                except SystemExit:
+                                    raise
+                                except Exception as thin_err:
+                                    log.warning("Thin-topic retry %d failed (%s); trying next.", _thin_attempt + 1, thin_err)
+                            if not retried:
+                                log.warning("🛑 FACT-CHECK GATE: halting run before any publishing. %s", fc_result.summary())
+                                if settings.ENABLE_TELEGRAM:
+                                    try:
+                                        telegram_notifier.send_completion_notification(
+                                            title=script_dict.get("title", "(untitled)"),
+                                            thesis=thesis,
+                                            custom_message=(
+                                                "🛑 Today's Short was blocked by the fact-check gate.\n\n"
+                                                + fc_result.summary()[:700]
+                                            ),
+                                        )
+                                    except Exception as tg_err:
+                                        log.warning("Telegram fact-check notice failed: %s", tg_err)
+                                sys.exit(0)
                         log.warning("Fact-check failed but FACT_CHECK_REQUIRED=false; continuing unchecked.")
 
                 is_dup, score, match = evaluator.is_duplicate(script_dict["title"], threshold=0.78)
