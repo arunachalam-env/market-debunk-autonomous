@@ -164,6 +164,31 @@ def run_pipeline():
             # enforce unique visual prompts, and attach seamless curiosity loop connector.
             script_dict = rewriter.auto_repair_script(script_dict, topic=thesis)
 
+            # ── Phase 2.5: Pre-publication Fact-Check Gate ─────────────
+            # Nothing reaches TTS, rendering, or any platform with unverified
+            # claims. Fail-closed: an unrunnable check also halts the run.
+            if settings.FACT_CHECK_ENABLED:
+                from src.agents.fact_check_agent import FactCheckAgent
+                fc_result = FactCheckAgent().check_script(script_dict, thesis=thesis)
+                if not fc_result.passed:
+                    blocking = fc_result.check_ran or settings.FACT_CHECK_REQUIRED
+                    if blocking:
+                        log.warning("🛑 FACT-CHECK GATE: halting run before any publishing. %s", fc_result.summary())
+                        if settings.ENABLE_TELEGRAM:
+                            try:
+                                telegram_notifier.send_completion_notification(
+                                    title=script_dict.get("title", "(untitled)"),
+                                    thesis=thesis,
+                                    custom_message=(
+                                        "🛑 Today's Short was blocked by the fact-check gate.\n\n"
+                                        + fc_result.summary()[:700]
+                                    ),
+                                )
+                            except Exception as tg_err:
+                                log.warning("Telegram fact-check notice failed: %s", tg_err)
+                        sys.exit(0)
+                    log.warning("Fact-check failed but FACT_CHECK_REQUIRED=false; continuing unchecked.")
+
             is_dup, score, match = evaluator.is_duplicate(script_dict["title"], threshold=0.78)
             if is_dup:
                 log.warning("Generated title duplicates '%s' (similarity %.2f). Auto-correcting title angle...", match, score)

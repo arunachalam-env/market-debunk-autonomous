@@ -109,6 +109,12 @@ class Settings:
     VOICE_PITCH: float = float(_get("VOICE_PITCH", default="0.0"))
     MAX_SSML_LENGTH: int = int(_get("MAX_SSML_LENGTH", default="4800"))
 
+    # ── Pre-publication Fact-Check Gate ────────────────────────────
+    FACT_CHECK_ENABLED: bool = (_get("FACT_CHECK_ENABLED", default="true") or "true").lower() == "true"
+    # When true, a failed/unrunnable check BLOCKS publication (fail-closed).
+    FACT_CHECK_REQUIRED: bool = (_get("FACT_CHECK_REQUIRED", default="true") or "true").lower() == "true"
+    FACT_CHECK_MODEL: str = _get("FACT_CHECK_MODEL", default="gemini-2.5-flash") or "gemini-2.5-flash"
+
     # ── Deduplication ─────────────────────────────────────────────
     DEDUP_THRESHOLD: float = float(_get("DEDUP_THRESHOLD", default="0.75"))
     DEDUP_WINDOW_DAYS: int = int(_get("DEDUP_WINDOW_DAYS", default="30"))
