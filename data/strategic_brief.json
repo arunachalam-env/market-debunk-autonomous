@@ -1,12 +1,12 @@
 {
-  "topic_thesis": "Your favorite brands aren't suffering from inflation; they are using it as a smokescreen to quietly hike prices while your purchasing power evaporates.",
-  "strategic_angle": "Expose the 'Cost-Push Pass-Through' lie: Corporations report record margins while claiming supply chain struggles force them to hike prices, effectively taxing the middle class to protect shareholder dividends.",
+  "topic_thesis": "Paytm's 78% profit jump is a classic accounting magic trick that ignores the difference between core operational health and one-time balance sheet adjustments.",
+  "strategic_angle": "We strip away the headline noise to expose how companies use 'other income' and accounting adjustments to inflate bottom-line growth while the underlying business model remains under intense regulatory and competitive pressure.",
   "format_type": "STANDALONE",
   "hook_style": "HARD_NUMBER_SHOCK",
-  "hook_type": "LOSS_IMPLICATION",
-  "key_statistic": "Sector-wide price hikes passed to consumers (verify per-story; no aggregate figure on record)",
-  "target_emotion": "Outrage at corporate greed and financial betrayal",
-  "pinned_comment_text": "Are you feeling the pinch in your monthly grocery bill? Which brand do you think is hiking prices the most? Comment 'GUIDE' if you want our tracker on how to spot these hidden price hikes before you checkout! \ud83d\udcac\ud83d\udc47",
-  "tamil_adaptation_directive": "Use a tone of 'Corporate Loot' (Corporate kolla). Use terms like 'Price hike-ah koodi unga pocket-ah kaali panraanga', 'Middle class-ku dhaan kastaam', and 'Namma kitta irundhu edukkuraanga'. Emphasize that the 'Supply chain excuse' is just a 'veenaana reason'.",
-  "source_signal": "Consumer pain-point regarding rising cost of living and stagnant wage growth"
+  "hook_type": "MYTH_BUST",
+  "key_statistic": "78.86% profit growth vs. 27.63% revenue growth",
+  "target_emotion": "Skepticism and analytical superiority",
+  "pinned_comment_text": "Is this 'profit' real cash in the bank or just paper accounting? If you want to see how to read a balance sheet without the corporate spin, comment 'GUIDE' below. \ud83d\udc47",
+  "tamil_adaptation_directive": "Use a tone of 'Market-la epdi yemathuranga paaru' (Look at how they cheat in the market). Focus on the contrast between revenue growth and profit growth using terms like 'Paper Profit' and 'Accounting Magic'. Tell the audience: 'Headline-a paathu invest panra unga kaasu, unga pocket-la irukaadhu'.",
+  "source_signal": "Market-wide confusion regarding sudden profitability in fintech stocks"
 }
