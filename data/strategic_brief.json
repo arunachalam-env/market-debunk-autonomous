@@ -1,12 +1,12 @@
 {
-  "topic_thesis": "Listed Indian manufacturing giants quietly pass an 11-13% cumulative price hike onto consumers over two quarters under the guise of raw material inflation to artificially pump operating margins.",
-  "strategic_angle": "Expose the corporate earnings playbook reported by brokerage trackers: companies hike prices by 7-9% in Q1 and another 3-4% in Q2, passing 100% of input costs to consumers while retail investors blindly buy the stock at all-time highs thinking margin growth is from operational efficiency.",
+  "topic_thesis": "You aren't investing in a company; you're buying 'scraps' in a rigged game where promoters hold 80% of the float, leaving you with zero exit liquidity.",
+  "strategic_angle": "Expose the 'Free Float Scarcity' trap where retail investors mistake low-volume price spikes for growth, while promoters keep a stranglehold on the supply to manipulate the exit price.",
   "format_type": "STANDALONE",
   "hook_style": "HARD_NUMBER_SHOCK",
   "hook_type": "LOSS_IMPLICATION",
-  "key_statistic": "11-13% cumulative price hike (7-9% Q1 + 3-4% Q2)",
-  "target_emotion": "Outrage at corporate margin extraction and retail investor blind spots",
-  "pinned_comment_text": "Are you paying 12% more for products just so listed companies can show inflated quarterly profits? Comment 'TRUTH' to get our breakdown on real company operating margins vs retail price hikes! \ud83d\udcac\ud83d\udc47",
-  "tamil_adaptation_directive": "Frame the concept around 'Raw Material Inflation Drama'. Use high-energy Tanglish terms like 'Margin Trick', 'Namma Pocket-la Kai Vaikkiranga', and 'FMCG Share Price Trap' to explain how everyday consumers pay double while corporate quarterly reports celebrate profit records.",
-  "source_signal": "HDFC Securities quarterly earnings tracker on input inflation pass-through"
+  "key_statistic": "81.3% promoter holding in ASIANLAK CAP. leaves less than 19% for the public, effectively trapping retail capital in an illiquid dead-end.",
+  "target_emotion": "Paranoia regarding retail liquidity traps and promoter manipulation.",
+  "pinned_comment_text": "Is your portfolio filled with 'hidden' traps like this? Check your promoter holding % right now. Comment 'GUIDE' if you want our checklist on how to spot these liquidity graveyards before you buy. \ud83d\udcc9\ud83d\udc47",
+  "tamil_adaptation_directive": "Use the hook 'Promoter-oda kaila irukku, unga kaila illa!' (It's in the promoter's hands, not yours). Explain that buying stocks with 80% promoter stake is like 'Lock-in period illatha jail' (a jail without a lock-in period). Use Tanglish terms like 'Liquidity crunch' and 'Operator game'.",
+  "source_signal": "Retail investors chasing low-priced midcaps without understanding the structural trap of promoter-heavy shareholding."
 }
