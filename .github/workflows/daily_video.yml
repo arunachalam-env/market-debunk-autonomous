@@ -183,7 +183,9 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.phase == 'prepare'
         with:
           name: phase-a-state
-          path: output/**
+          path: |
+            output/**
+            !output/visual_cache/**
           retention-days: 2
 
       - name: Upload Tamil master visual package
