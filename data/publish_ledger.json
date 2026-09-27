@@ -1343,7 +1343,7 @@
       "facebook": "1351359751390146"
     },
     "audited": false,
-    "audit_attempts": 2
+    "audit_attempts": 3
   },
   {
     "timestamp": "2026-09-26T08:54:44.317508+00:00",
@@ -1482,6 +1482,34 @@
       "youtube": "91DVAUn2lX8",
       "instagram": "18112308875596301",
       "facebook": "2828343184266718"
+    },
+    "audited": false
+  },
+  {
+    "timestamp": "2026-09-27T13:27:33.379274+00:00",
+    "title": "Financial Books: The Hidden Wealth Tax Trap #Shorts",
+    "topic": "Buying more financial books is a hidden tax on your wealth, keeping you in a cycle of perpetual learning while your capital sits idle.",
+    "hook": "💰 Why your collection of finance books is actually making you poorer",
+    "hashtags": [
+      "#MoneyMistakes",
+      "#FinanceLiteracy",
+      "#SensexAlert",
+      "#SIPInvesting",
+      "#WealthBuilding",
+      "#IndianStockMarket",
+      "#NiftyAlert",
+      "#NSEIndia"
+    ],
+    "duration_seconds": 78.053877,
+    "urls": {
+      "youtube": null,
+      "instagram": null,
+      "facebook": "https://www.facebook.com/reel/1557973588927500/"
+    },
+    "ids": {
+      "youtube": null,
+      "instagram": null,
+      "facebook": "1557973588927500"
     },
     "audited": false
   }
