@@ -215,6 +215,25 @@ Return strict JSON only:
                             continue  # next key, same model
                         log.warning("Fact-check quota exhausted on all keys for %s; trying next model.", candidate)
                         break  # next model
+                    # Transient backend errors (demand spikes, timeouts) get the
+                    # same rotation treatment as quota exhaustion: try the next
+                    # key, then the next model. Still fail-closed if every
+                    # candidate errors out.
+                    if (
+                        "503" in msg
+                        or "UNAVAILABLE" in msg
+                        or "DEADLINE_EXCEEDED" in msg
+                        or "high demand" in msg.lower()
+                    ):
+                        log.warning(
+                            "Fact-check transient error on %s (key #%d): %s; trying next key/model.",
+                            candidate,
+                            key_index + 1,
+                            msg.splitlines()[0][:120],
+                        )
+                        if key_index + 1 < len(api_keys):
+                            continue  # next key, same model
+                        break  # next model
                     raise
         raise RuntimeError(f"all fact-check models/keys failed: {last_exc}")
 

@@ -244,3 +244,31 @@ def test_gemma_error_fails_closed(monkeypatch):
 
     with pytest.raises(Exception, match="500"):
         agent._verify_with_grounded_model("Your SIP is losing 2% yearly", "t")
+
+
+def test_transient_503_walks_models(monkeypatch):
+    """A 503 UNAVAILABLE demand spike rotates to the next model instead of halting."""
+    agent = FactCheckAgent()
+    calls = []
+
+    class FakeResponse:
+        text = '{"claims": []}'
+
+    class FakeModels:
+        def generate_content(self, model=None, contents=None, config=None):
+            calls.append(model)
+            if len(calls) == 1:
+                raise Exception("503 UNAVAILABLE. This model is currently experiencing high demand.")
+            return FakeResponse()
+
+    class FakeClient:
+        models = FakeModels()
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    from google import genai
+    monkeypatch.setattr(genai, "Client", lambda api_key=None: FakeClient())
+
+    raw = agent._verify_with_grounded_model("Your SIP is losing 2% yearly", "t")
+    assert raw == '{"claims": []}'
+    assert len(calls) == 2
+    assert calls[0] != calls[1]
