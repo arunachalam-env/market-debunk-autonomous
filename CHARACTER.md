@@ -26,7 +26,9 @@ finance concept per episode, told as a story.
 
 ```text
 Young Indian man, 24, wheatish skin, dark slightly-messy wavy hair with a few
-strands over the forehead, warm brown eyes, light stubble, lean build.
+strands over the forehead, warm brown eyes, short boxed beard and mustache, lean build.
+The face is modeled on the real Arun (owner-approved photo reference, Sep 27 2026) -
+keep his real face recognizable in every scene.
 Wardrobe ALWAYS: casual olive-green hoodie. No glasses, no jewelry, no logos.
 Style: muted hand-painted storybook illustration, graphic-novel watercolor
 texture, warm sepia-and-olive palette, soft amber lamplight, slightly
