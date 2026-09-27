@@ -14,6 +14,7 @@ def export_master_package(
     visuals: list[dict],
     source_id: str = "",
     strategic_brief: Optional[dict] = None,
+    source_excerpt: str = "",
 ) -> Path:
     """Copy scene assets plus the scene-aligned English script into one package."""
     package_dir = run_dir / "master_visual_package"
@@ -40,6 +41,9 @@ def export_master_package(
         "script": script,
         "scenes": manifest_scenes,
         "strategic_brief": strategic_brief,
+        # Original-reporting excerpt so the Tamil gate can catch misreadings
+        # the same way the English gate does (see fact_check_agent).
+        "source_excerpt": source_excerpt,
     }
     (package_dir / "master_package.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"

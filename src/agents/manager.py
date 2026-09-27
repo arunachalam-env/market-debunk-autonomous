@@ -268,6 +268,7 @@ def run_pipeline():
                 visual_results,
                 source_id=topic_data.get("source_id", ""),
                 strategic_brief=strategic_brief.model_dump() if strategic_brief else None,
+                source_excerpt=str(story_seed.get("source_excerpt", "")),
             )
             log.info("Exported Tamil companion visual package: %s", master_package)
 
