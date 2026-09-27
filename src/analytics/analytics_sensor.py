@@ -372,6 +372,30 @@ class AnalyticsSensor:
                 metrics = _stats_from(res.get("items", []))
                 if metrics:
                     log.info("✓ YouTube statistics via OAuth for %s: %s", clean_id, metrics)
+                    # Retention curves need the YouTube Analytics API
+                    # (yt-analytics.readonly scope). Fail-soft: older tokens
+                    # simply skip this block until consent is refreshed.
+                    try:
+                        yta = build("youtubeAnalytics", "v2", credentials=creds, cache_discovery=False)
+                        today = datetime.now(timezone.utc)
+                        rep = yta.reports().query(
+                            ids="channel==MINE",
+                            filters=f"video=={clean_id}",
+                            startDate=(today - timedelta(days=28)).strftime("%Y-%m-%d"),
+                            endDate=today.strftime("%Y-%m-%d"),
+                            metrics="views,averageViewDuration,averageViewPercentage",
+                            dimensions="video",
+                        ).execute()
+                        rows = rep.get("rows", [])
+                        if rows:
+                            metrics["avg_view_duration_s"] = rows[0][1]
+                            metrics["avg_view_percentage"] = rows[0][2]
+                            log.info("✓ Retention for %s: avgViewPercentage=%s", clean_id, rows[0][2])
+                    except Exception as ret_exc:
+                        log.info(
+                            "Retention metrics unavailable for %s (token needs the "
+                            "yt-analytics.readonly scope): %s", clean_id, ret_exc,
+                        )
                     return metrics
             except Exception as oauth_exc:
                 # Was log.debug: this failure silently kept analytics empty.

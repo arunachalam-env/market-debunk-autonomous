@@ -10,7 +10,11 @@ except ImportError:
     sys.exit(1)
 
 # YouTube Data API upload scope
-SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+SCOPES = [
+    "https://www.googleapis.com/auth/youtube.upload",
+    "https://www.googleapis.com/auth/youtube.readonly",
+    "https://www.googleapis.com/auth/yt-analytics.readonly",
+]
 
 def main():
     print("====================================================")

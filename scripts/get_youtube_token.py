@@ -61,13 +61,13 @@ class OAuthHandler(http.server.SimpleHTTPRequestHandler):
 auth_url = (
     f"https://accounts.google.com/o/oauth2/v2/auth?"
     f"client_id={CLIENT_ID}&redirect_uri={urllib.parse.quote(REDIRECT_URI)}&"
-    f"response_type=code&scope=https://www.googleapis.com/auth/youtube.upload&"
+    f"response_type=code&scope={urllib.parse.quote('https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/yt-analytics.readonly')}&"
     f"access_type=offline&prompt=consent"
 )
 
 print("\n============================================================")
 print("STEP 1: Add http://localhost:8091 to Google Cloud Console Credentials")
-print("STEP 2: Click this URL to authorize YouTube uploads:")
+print("STEP 2: Click this URL to authorize YouTube uploads + statistics + retention analytics:")
 print(auth_url)
 print("============================================================\n")
 

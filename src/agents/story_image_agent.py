@@ -68,8 +68,17 @@ def _gemini_keys() -> list[str]:
     return out
 
 
+_HOOK_FRAME = (
+    " This is the OPENING frame of the video: make it visually arresting - an unusual, "
+    "slightly paradoxical composition that makes a scroller stop and wonder what they are "
+    "looking at, while staying fully inside the locked style, palette, and world."
+)
+
+
 def _build_prompt(scene: dict, has_sheet: bool) -> str:
     beat = " ".join(str(scene.get("visual_prompt", "")).split())
+    if scene.get("scene_id") == 1:
+        beat = beat + _HOOK_FRAME
     if has_sheet:
         return (
             "Using the attached reference image, keep the EXACT same character "
