@@ -1,12 +1,12 @@
 {
-  "topic_thesis": "Your salary is flat, but corporate India is silently stealing 10-13% of your purchasing power through back-to-back price hikes.",
-  "strategic_angle": "We expose the 'Margin Protection' scam: Companies aren't just adjusting for inflation; they are using it as a cover to hike prices by 13% cumulative while keeping your lifestyle costs artificially inflated to pad their own quarterly balance sheets.",
+  "topic_thesis": "Your favorite brands aren't suffering from inflation; they are using it as a smokescreen to hike prices by 13% while your purchasing power evaporates.",
+  "strategic_angle": "Expose the 'Cost-Push Pass-Through' lie: Corporations report record margins while claiming supply chain struggles force them to hike prices, effectively taxing the middle class to protect shareholder dividends.",
   "format_type": "STANDALONE",
   "hook_style": "HARD_NUMBER_SHOCK",
   "hook_type": "LOSS_IMPLICATION",
-  "key_statistic": "13% total price inflation in 6 months vs 0% salary growth for the average retail consumer.",
-  "target_emotion": "Indignation and a sense of financial betrayal.",
-  "pinned_comment_text": "Is your monthly budget bleeding because of these 'hidden' hikes? Tell us which brand you've noticed overcharging the most, or comment 'GUIDE' to get our manual on how to cut your cost-of-living overheads! \ud83d\udcb8\ud83d\udc47",
-  "tamil_adaptation_directive": "Use a tone of 'Middle-class makkale, ungalai epdi yemaathuranga parunga.' Focus on the 'Price hike' vs 'Salary hike' reality. Use Tanglish terms like 'Budget gaali', 'Corporate loot', and 'Vilai vaasi kooduthu, ana salary adhe than'.",
-  "source_signal": "Consumer purchasing power erosion and the disconnect between corporate margin growth vs retail income stagnation."
+  "key_statistic": "13% total price hike (7-9% Q1 + 3-4% Q2)",
+  "target_emotion": "Outrage at corporate greed and financial betrayal",
+  "pinned_comment_text": "Are you feeling the pinch in your monthly grocery bill? Which brand do you think is hiking prices the most? Comment 'GUIDE' if you want our tracker on how to spot these hidden price hikes before you checkout! \ud83d\udcac\ud83d\udc47",
+  "tamil_adaptation_directive": "Use a tone of 'Corporate Loot' (Corporate kolla). Use terms like 'Price hike-ah koodi unga pocket-ah kaali panraanga', 'Middle class-ku dhaan kastaam', and 'Namma kitta irundhu edukkuraanga'. Emphasize that the 'Supply chain excuse' is just a 'veenaana reason'.",
+  "source_signal": "Consumer pain-point regarding rising cost of living and stagnant wage growth"
 }
