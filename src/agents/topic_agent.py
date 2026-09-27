@@ -597,6 +597,11 @@ TONE & SATIRICAL DEBUNK DIRECTIVE:
 - The thesis must be provocative, witty, but completely defensible.
 - The story_seed should give the script agent concrete props and relatable everyday consumer situations.
 
+FACT TRACEABILITY (HARD RULE):
+- Every number, percentage, rupee amount, date, and named entity in your thesis and story_seed fields MUST appear explicitly in the TRANSCRIPT/source text above.
+- If the source has no figure, describe it qualitatively ("a double-digit hike", "a steep hidden fee") - NEVER invent statistics and never attribute them to unnamed reports, studies, or trackers.
+- A downstream fact-check gate verifies every claim against live sources and blocks the video on anything unverifiable.
+
 Output ONLY a valid JSON object with exactly these keys (all values in English):
 {{
   "thesis": "One sentence (max 25 words): the most controversial or provocative financial claim from this content. Should make viewers say 'wait, really?!'",
