@@ -247,7 +247,9 @@ def test_gemma_error_fails_closed(monkeypatch):
 
 
 def test_transient_503_walks_models(monkeypatch):
-    """A 503 UNAVAILABLE demand spike rotates to the next model instead of halting."""
+    """A 503 UNAVAILABLE demand spike retries in place, then rotates models."""
+    import time
+    monkeypatch.setattr(time, "sleep", lambda s: None)
     agent = FactCheckAgent()
     calls = []
 
@@ -257,7 +259,7 @@ def test_transient_503_walks_models(monkeypatch):
     class FakeModels:
         def generate_content(self, model=None, contents=None, config=None):
             calls.append(model)
-            if len(calls) == 1:
+            if len(calls) <= 2:
                 raise Exception("503 UNAVAILABLE. This model is currently experiencing high demand.")
             return FakeResponse()
 
@@ -270,5 +272,39 @@ def test_transient_503_walks_models(monkeypatch):
 
     raw = agent._verify_with_grounded_model("Your SIP is losing 2% yearly", "t")
     assert raw == '{"claims": []}'
-    assert len(calls) == 2
-    assert calls[0] != calls[1]
+    assert len(calls) == 3
+    assert calls[0] == calls[1]  # in-place retry on the same model
+    assert calls[1] != calls[2]  # then rotation to the next model
+
+
+def test_empty_response_retries_once_then_walks_models(monkeypatch):
+    """An empty response retries the same model once, then moves on."""
+    import time
+    monkeypatch.setattr(time, "sleep", lambda s: None)
+    agent = FactCheckAgent()
+    calls = []
+
+    class FakeResponse:
+        text = '{"claims": []}'
+
+    class FakeModels:
+        def generate_content(self, model=None, contents=None, config=None):
+            calls.append(model)
+            if len(calls) <= 2:
+                r = FakeResponse()
+                r.text = ""
+                return r
+            return FakeResponse()
+
+    class FakeClient:
+        models = FakeModels()
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    from google import genai
+    monkeypatch.setattr(genai, "Client", lambda api_key=None: FakeClient())
+
+    raw = agent._verify_with_grounded_model("Your SIP is losing 2% yearly", "t")
+    assert raw == '{"claims": []}'
+    assert len(calls) == 3
+    assert calls[0] == calls[1]  # in-place retry after empty response
+    assert calls[1] != calls[2]  # then rotation

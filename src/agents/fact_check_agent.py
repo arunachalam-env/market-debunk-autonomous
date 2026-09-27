@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -39,6 +40,9 @@ FACT_CHECK_MODEL_FALLBACKS = ("gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.
 # the check runs on model knowledge only and the normal blocking rules still
 # apply (UNVERIFIABLE blocks). If Gemma errors out, the gate fails closed.
 GEMMA_FACT_CHECK_FALLBACKS = ("gemma-4-31b-it", "gemma-4-26b-a4b-it")
+
+# Backoff before retrying a transient error or empty response on the same model/key.
+_TRANSIENT_BACKOFF_S = 15
 
 _UNGROUNDED_SUFFIX = (
     "\n\nNOTE: live web search is unavailable for this check. Verify each claim "
@@ -188,53 +192,65 @@ Return strict JSON only:
         for candidate in candidates:
             for key_index, api_key in enumerate(api_keys):
                 client = genai.Client(api_key=api_key)
-                try:
-                    text, grounded = self._generate_checked(client, candidate, prompt, types)
-                    if text:
-                        if candidate != self.model or key_index > 0:
+                for attempt in (1, 2):
+                    try:
+                        text, grounded = self._generate_checked(client, candidate, prompt, types)
+                        if text:
+                            if candidate != self.model or key_index > 0:
+                                log.warning(
+                                    "Fact-check succeeded with fallback (model %s, key #%d).",
+                                    candidate, key_index + 1,
+                                )
+                            if not grounded:
+                                log.warning(
+                                    "Fact-check ran UNGROUNDED on %s: verdicts are model-knowledge only (no live search).",
+                                    candidate,
+                                )
+                            return text
+                        last_exc = RuntimeError("empty response from fact-check model")
+                        if attempt == 1:
                             log.warning(
-                                "Fact-check succeeded with fallback (model %s, key #%d).",
-                                candidate, key_index + 1,
+                                "Fact-check empty response from %s (key #%d); retrying once after %ds backoff.",
+                                candidate, key_index + 1, _TRANSIENT_BACKOFF_S,
                             )
-                        if not grounded:
+                            time.sleep(_TRANSIENT_BACKOFF_S)
+                            continue  # retry same model/key once
+                        break  # empty twice: next key/model
+                    except Exception as exc:
+                        last_exc = exc
+                        msg = str(exc)
+                        if "NOT_FOUND" in msg or "no longer available" in msg:
+                            log.warning("Fact-check model %s not available; trying next model.", candidate)
+                            break  # next key/model
+                        if "429" in msg or "RESOURCE_EXHAUSTED" in msg:
+                            if key_index + 1 < len(api_keys):
+                                log.warning("Fact-check quota exhausted on key #%d for %s; rotating key.", key_index + 1, candidate)
+                            else:
+                                log.warning("Fact-check quota exhausted on all keys for %s; trying next model.", candidate)
+                            break  # next key/model
+                        # Transient backend errors (demand spikes, timeouts):
+                        # retry the same model/key once after a short backoff,
+                        # then rotate like quota exhaustion. Still fail-closed
+                        # if every candidate errors out.
+                        if (
+                            "503" in msg
+                            or "UNAVAILABLE" in msg
+                            or "DEADLINE_EXCEEDED" in msg
+                            or "high demand" in msg.lower()
+                        ):
+                            if attempt == 1:
+                                log.warning(
+                                    "Fact-check transient error on %s (key #%d): %s; retrying once after %ds backoff.",
+                                    candidate, key_index + 1, msg.splitlines()[0][:120], _TRANSIENT_BACKOFF_S,
+                                )
+                                time.sleep(_TRANSIENT_BACKOFF_S)
+                                continue  # retry same model/key once
                             log.warning(
-                                "Fact-check ran UNGROUNDED on %s: verdicts are model-knowledge only (no live search).",
-                                candidate,
+                                "Fact-check transient error persists on %s (key #%d): %s; trying next key/model.",
+                                candidate, key_index + 1, msg.splitlines()[0][:120],
                             )
-                        return text
-                    last_exc = RuntimeError("empty response from fact-check model")
-                except Exception as exc:
-                    last_exc = exc
-                    msg = str(exc)
-                    if "NOT_FOUND" in msg or "no longer available" in msg:
-                        log.warning("Fact-check model %s not available; trying next model.", candidate)
-                        break  # next model, same key set
-                    if "429" in msg or "RESOURCE_EXHAUSTED" in msg:
-                        if key_index + 1 < len(api_keys):
-                            log.warning("Fact-check quota exhausted on key #%d for %s; rotating key.", key_index + 1, candidate)
-                            continue  # next key, same model
-                        log.warning("Fact-check quota exhausted on all keys for %s; trying next model.", candidate)
-                        break  # next model
-                    # Transient backend errors (demand spikes, timeouts) get the
-                    # same rotation treatment as quota exhaustion: try the next
-                    # key, then the next model. Still fail-closed if every
-                    # candidate errors out.
-                    if (
-                        "503" in msg
-                        or "UNAVAILABLE" in msg
-                        or "DEADLINE_EXCEEDED" in msg
-                        or "high demand" in msg.lower()
-                    ):
-                        log.warning(
-                            "Fact-check transient error on %s (key #%d): %s; trying next key/model.",
-                            candidate,
-                            key_index + 1,
-                            msg.splitlines()[0][:120],
-                        )
-                        if key_index + 1 < len(api_keys):
-                            continue  # next key, same model
-                        break  # next model
-                    raise
+                            break  # next key/model
+                        raise
         raise RuntimeError(f"all fact-check models/keys failed: {last_exc}")
 
     @staticmethod
