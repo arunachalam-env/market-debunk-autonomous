@@ -288,7 +288,10 @@ def build_queue(path: Optional[Path] = None, max_candidates: int = MAX_CANDIDATE
                 "status": "queued",
                 "score": score,
                 "language": "en",
-                "theme": target_domain,
+                "theme": (
+                    evaluator.get_topic_domain(thesis)
+                    if hasattr(evaluator, "get_topic_domain") else None
+                ) or target_domain,
                 "created_at": now.isoformat(),
                 "channel": cand["channel"],
                 "video_id": cand["video_id"],
