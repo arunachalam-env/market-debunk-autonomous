@@ -210,11 +210,11 @@ def _synthesize_fish_audio(
         "reference_id": voice_id,
         "format": "mp3",
         "normalize": True,
-        "temperature": 0.70,
-        "top_p": 0.80,
+        "temperature": 0.85,
+        "top_p": 0.85,
         "chunk_length": 200,
         "prosody": {
-            "speed": 1.08,
+            "speed": 1.12,
             "volume": 0.0
         }
     }
@@ -377,7 +377,7 @@ def synthesize_all_scenes(scenes: list[dict], audio_dir: Path, voice: str = DEFA
     max_duration_cap = float(getattr(settings, "MAX_VIDEO_DURATION", 45.0)) - 3.0  # ~42.0s
 
     if total_duration > max_duration_cap:
-        speedup = min(1.35, max(1.02, total_duration / target_duration))
+        speedup = min(1.15, max(1.02, total_duration / target_duration))
         log.info(
             "⏱️ Total voice duration (%.1fs) exceeds %.1fs cap. Applying automatic FFmpeg atempo speedup of %.3fx to reach ~%.1fs target...",
             total_duration, max_duration_cap, speedup, target_duration
