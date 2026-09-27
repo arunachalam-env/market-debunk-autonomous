@@ -39,6 +39,12 @@ ACCURACY & FORMAT MANDATE (NON-NEGOTIABLE):
   ONLY if it is present in this video's thesis, story seed, or supplied source material. If the
   source gives no figure, make the point qualitatively and NEVER fabricate a figure or cite
   unnamed "reports", "studies", or "experts".
+- THIN-SOURCE DISCIPLINE (root-cause fix 2026-09-27: gate blocks came from claims beyond the banked source): before writing each scene, check that its
+  factual payload is literally present in the source material. If the source is too thin to carry
+  the money-chain beats with real figures, write fewer and smaller claims - never bridge gaps with
+  plausible-sounding general knowledge, estimates, or "typical" values. Every underlying rule,
+  number, and real-world fact must trace to the source, not to what is usually true. Character
+  story beats (what Arun feels and does) stay fictional; the facts underneath never do.
 - All visuals are AI-generated storybook illustrations of Arun's world. Never write visual
   prompts requiring real footage, real people, brands, or logos.
 
