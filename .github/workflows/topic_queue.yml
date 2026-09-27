@@ -1,0 +1,60 @@
+name: Autonomous Topic Bank Builder (Evening - 8:30 PM IST)
+
+on:
+  schedule:
+    # Runs the evening before the 09:17 AM IST daily video run, so the
+    # pipeline always wakes up to a pre-researched topic bank instead of
+    # depending on live scanning at run time.
+    - cron: '0 15 * * *'  # 08:30 PM IST
+  workflow_dispatch: # Allow manual top-up from GitHub UI
+
+jobs:
+  build-topic-bank:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to commit data/topic_queue.json back to repo
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv (Fast Package Manager)
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install Dependencies
+        run: uv pip install --system -r requirements.txt
+
+      - name: Setup YouTube Cookies
+        env:
+          YT_COOKIES: ${{ secrets.YT_COOKIES }}
+        run: |
+          if [ -n "$YT_COOKIES" ]; then
+            echo "$YT_COOKIES" > cookies.txt
+            echo "Cookies file created successfully."
+          else
+            echo "No YT_COOKIES secret found. Proceeding without cookies."
+          fi
+
+      - name: Build Topic Bank
+        env:
+          GEMINI_SCRIPT_API_KEY: ${{ secrets.GEMINI_SCRIPT_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+        run: python -m src.agents.topic_queue --build
+
+      - name: Commit Topic Bank
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          [ -f data/topic_queue.json ] && git add data/topic_queue.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: refresh autonomous topic bank [skip ci]" && (git pull origin master --rebase --autostash -X ours || true) && git push origin master)

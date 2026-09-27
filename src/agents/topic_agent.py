@@ -996,6 +996,18 @@ def discover_topic(day_override: Optional[int] = None) -> dict:
     target_domain = evaluator.get_current_target_domain()
     log.info("Target slot domain: %s", target_domain)
 
+    # Step 0: Autonomous topic bank (built by the evening topic_queue.yml
+    # workflow). Re-validated at selection time; falls back to live
+    # discovery when the bank is empty or every candidate is invalid.
+    try:
+        from src.agents import topic_queue
+        queued_topic = topic_queue.select_candidate(target_domain)
+        if queued_topic:
+            log.info("\u2713 Topic bank supplied today's topic: '%s'", queued_topic.get("thesis", "")[:60])
+            return queued_topic
+    except Exception as tq_err:
+        log.warning("Topic bank unavailable, using live discovery: %s", tq_err)
+
     # Step 1: Parallel scan across all 7 channels sorted by newest globally
     candidates = scan_all_channels_parallel(limit_per_channel=5)
 

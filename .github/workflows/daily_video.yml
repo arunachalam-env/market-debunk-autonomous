@@ -19,6 +19,22 @@ on:
         default: 'false'
         type: choice
         options: ['false', 'true']
+      phase:
+        description: 'full = normal one-shot run; prepare = topic+script+voice only (saves Phase A state); produce = assemble+publish from Phase A state'
+        required: false
+        default: 'full'
+        type: choice
+        options: ['full', 'prepare', 'produce']
+      state_run_id:
+        description: '(produce) Run ID of the prepare run whose phase-a-state artifact to restore'
+        required: false
+        default: ''
+        type: string
+      image_pack:
+        description: '(produce) Release tag containing scenes.tar.gz of externally rendered scene images'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   run-pipeline:
@@ -87,6 +103,31 @@ jobs:
           restore-keys: |
             visual-cache-${{ runner.os }}-
 
+      - name: Restore Phase A state (produce mode)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.phase == 'produce'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh run download "${{ github.event.inputs.state_run_id }}" -n phase-a-state -D phase_a_restore
+          STATE_FILE=$(find phase_a_restore -name phase_a_state.json | head -1)
+          [ -n "$STATE_FILE" ] || (echo "phase_a_state.json not found in artifact" && exit 1)
+          RUN_DIR=$(dirname "$STATE_FILE")
+          mkdir -p output
+          cp -r "$RUN_DIR" output/
+          echo "PHASE_A_STATE_DIR=output" >> "$GITHUB_ENV"
+          echo "Restored Phase A state from run ${{ github.event.inputs.state_run_id }}: $RUN_DIR"
+
+      - name: Download scene image pack (produce mode)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.phase == 'produce'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p data/story_inbox
+          rm -f data/story_inbox/scene_*.png
+          gh release download "${{ github.event.inputs.image_pack }}" -p "scenes.tar.gz" --clobber
+          tar -xzf scenes.tar.gz -C data/story_inbox
+          ls -la data/story_inbox
+
       - name: Run Pipeline (Manager Agent)
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
@@ -103,6 +144,9 @@ jobs:
           SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           STORY_MODE: ${{ vars.STORY_MODE || 'true' }}
+          PIPELINE_PHASE: ${{ github.event_inputs.phase || 'full' }}
+          PHASE_A_STATE_DIR: ${{ env.PHASE_A_STATE_DIR }}
+          STORY_IMAGES_INBOX: ${{ github.event.inputs.phase == 'produce' && 'data/story_inbox' || '' }}
           GEMINI_IMAGE_API_KEY: ${{ secrets.GEMINI_IMAGE_API_KEY }}
           YT_API_KEY: ${{ secrets.YT_API_KEY }}
           ENABLE_YT_UPLOAD: ${{ github.event.inputs.skip_publish == 'true' && 'false' || (secrets.ENABLE_YT_UPLOAD || 'true') }}
@@ -134,6 +178,14 @@ jobs:
           path: output/**/distribution_ready.mp4
           retention-days: 7
 
+      - name: Upload Phase A State Artifact (prepare mode)
+        uses: actions/upload-artifact@v4
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.phase == 'prepare'
+        with:
+          name: phase-a-state
+          path: output/**
+          retention-days: 2
+
       - name: Upload Tamil master visual package
         uses: actions/upload-artifact@v4
         if: success()
@@ -147,14 +199,14 @@ jobs:
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          for f in data/used_topics.json data/used_questions.json data/channel_ids.json data/used_broll.json data/publish_ledger.json data/analytics_ledger.json data/deprecated_patterns.json data/tuning_playbook.json data/strategic_brief.json; do
+          for f in data/used_topics.json data/used_questions.json data/channel_ids.json data/used_broll.json data/publish_ledger.json data/analytics_ledger.json data/deprecated_patterns.json data/tuning_playbook.json data/strategic_brief.json data/topic_queue.json; do
             [ -f "$f" ] && git add "$f"
           done
           # Only commit if there are changes
           git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update topic, analytics, tuning playbook, and dedup history [skip ci]" && (git pull origin master --rebase --autostash -X ours || true) && git push origin master)
 
       - name: Trigger Tamil companion pipeline
-        if: success() && github.event.inputs.skip_publish != 'true' 
+        if: success() && github.event.inputs.skip_publish != 'true' && github.event.inputs.phase != 'prepare' 
         env:
           GH_TOKEN: ${{ secrets.TAMIL_WORKFLOW_TOKEN }}
         run: |

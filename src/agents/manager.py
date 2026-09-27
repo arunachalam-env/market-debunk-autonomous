@@ -15,6 +15,7 @@ Executes the full daily workflow:
 from __future__ import annotations
 
 import sys
+import os
 import time
 from datetime import datetime
 from pathlib import Path
@@ -81,183 +82,248 @@ def run_pipeline():
     timing_guard.apply_jitter(min_seconds=5, max_seconds=20)
 
     try:
-        # ── Phase 1: Topic Discovery (Battle-Tested Real-World Sourcing) ──
-        # Scans 7 Indian YouTube channels (Money Pechu, PR Sundar, etc.) + 24h Google News via SerpApi
-        with PhaseTimer("Phase 1: Topic Discovery"):
-            topic_data = topic_agent.discover_topic()
+        pipeline_phase = (os.environ.get("PIPELINE_PHASE", "full") or "full").strip().lower()
+        if pipeline_phase == "produce":
+            # ── Produce mode: restore Phase A state, skip discovery/script/voice ──
+            import json as _json
+            from types import SimpleNamespace
+            state_dir = Path((os.environ.get("PHASE_A_STATE_DIR") or "").strip() or ".")
+            state_file = state_dir / "phase_a_state.json"
+            if not state_file.is_file():
+                candidates = sorted(state_dir.rglob("phase_a_state.json"))
+                if not candidates:
+                    raise RuntimeError(f"Produce mode: phase_a_state.json not found under {state_dir}")
+                state_file = candidates[0]
+            state = _json.loads(state_file.read_text(encoding="utf-8"))
+            run_dir = Path(state["run_dir"])
+            run_dir.mkdir(parents=True, exist_ok=True)
+            audio_dir = run_dir / "audio"
+            visuals_dir = run_dir / "visuals"
+            audio_dir.mkdir(parents=True, exist_ok=True)
+            visuals_dir.mkdir(parents=True, exist_ok=True)
+            topic_data = state["topic_data"]
             channel = topic_data["channel"]
             video_id = topic_data["video_id"]
-            thesis = topic_data["thesis"]
-            story_seed = topic_data.get("story_seed", {})
-            log.info("Chosen channel: %s", channel)
-            log.info("Core thesis: %s", thesis)
-            log.info("Story seed concept: %s", story_seed.get("concept_name", "N/A"))
+            thesis = state["thesis"]
+            story_seed = state.get("story_seed", {})
+            script_dict = state["script_dict"]
+            voice_results = []
+            for vr in state["voice_results"]:
+                vr2 = dict(vr)
+                vr2["mp3_path"] = str(run_dir / vr["mp3_rel"])
+                vr2["timings_path"] = str(run_dir / vr["timings_rel"])
+                voice_results.append(vr2)
+            stats = state.get("stats", {})
+            strategic_brief = SimpleNamespace(**state["strategic_brief"]) if state.get("strategic_brief") else None
+            director = None  # post-publish engagement step skipped in produce mode
+            log.info("Produce mode: restored Phase A state for run %s (%d scenes)", state.get("run_id"), len(script_dict.get("scenes", [])))
+        else:
 
-        # ── Phase 1.2: Autonomous Channel Director LLM Strategic Layer ────
-        # Operates directly ON TOP OF the freshly sourced real-world story
-        director = None
-        strategic_brief = None
-        try:
-            from src.agents.channel_director import ChannelDirectorAgent
-            director = ChannelDirectorAgent()
-            strategic_brief = director.formulate_strategic_brief(topic_data=topic_data)
-            if strategic_brief and strategic_brief.topic_thesis:
-                # Elevate thesis with the Director's cynical framing while keeping real-world source_id
-                thesis = strategic_brief.topic_thesis
-                topic_data["thesis"] = thesis
-                log.info("✓ Channel Director Strategic Brief elevated topic: '%s'", thesis)
-                log.info("Strategic Angle: %s", strategic_brief.strategic_angle)
-        except Exception as dir_err:
-            log.warning("Director Agent brief notice (%s); proceeding with raw sourced topic", dir_err)
+            # ── Phase 1: Topic Discovery (Battle-Tested Real-World Sourcing) ──
+            # Scans 7 Indian YouTube channels (Money Pechu, PR Sundar, etc.) + 24h Google News via SerpApi
+            with PhaseTimer("Phase 1: Topic Discovery"):
+                topic_data = topic_agent.discover_topic()
+                channel = topic_data["channel"]
+                video_id = topic_data["video_id"]
+                thesis = topic_data["thesis"]
+                story_seed = topic_data.get("story_seed", {})
+                log.info("Chosen channel: %s", channel)
+                log.info("Core thesis: %s", thesis)
+                log.info("Story seed concept: %s", story_seed.get("concept_name", "N/A"))
+
+            # ── Phase 1.2: Autonomous Channel Director LLM Strategic Layer ────
+            # Operates directly ON TOP OF the freshly sourced real-world story
+            director = None
             strategic_brief = None
-
-        # ── Phase 1.5: Dedup Gate ─────────────────────────────────────────
-        with PhaseTimer("Phase 1.5: Dedup Gate"):
-            is_dup, score, match = evaluator.is_duplicate(thesis)
-            if is_dup:
-                log.warning("🛑 Topic is too similar to '%s' (score %.2f). Switching to fresh evergreen seed...", match, score)
-                from src.agents.topic_agent import _EVERGREEN_TOPICS, summarize_to_story_seed
-                found_fresh = False
-                for eg in _EVERGREEN_TOPICS:
-                    eg_dup, _, _ = evaluator.is_duplicate(eg)
-                    if not eg_dup:
-                        thesis = eg
-                        channel = "Market Debunk Research"
-                        seed_data = summarize_to_story_seed(f"FINANCIAL CONCEPT: {eg}", eg)
-                        story_seed = seed_data.get("story_seed", {})
-                        log.info("✓ Switched to fresh evergreen topic: '%s'", thesis)
-                        found_fresh = True
-                        break
-                if not found_fresh:
-                    log.warning("All evergreen topics duplicate recent history. Halting to prevent feed spam.")
-                    sys.exit(0)
-            log.info("Topic passed uniqueness check.")
-
-        # ── Phase 2: Script Generation (with Script Doctor) ───────────────
-        with PhaseTimer("Phase 2: Script Generation"):
-            rewriter = EnglishScriptRewriterAgent()
-
-            # ── Phase 1.75: Question Crafting (Anti-Repetition Hook) ──────
-            question_hook = ""
-            if bool(getattr(settings, "STORY_MODE", False)):
-                log.info("Story mode: paradox cold-open replaces the question hook; skipping QuestionCraftingAgent.")
             try:
-                if bool(getattr(settings, "STORY_MODE", False)):
-                    raise ValueError("story mode active")
-                from src.agents.question_agent import QuestionCraftingAgent
-                hook_type = getattr(strategic_brief, "hook_type", "LOSS_IMPLICATION") if strategic_brief else "LOSS_IMPLICATION"
-                topic_keywords = story_seed.get("concept_name", "") if isinstance(story_seed, dict) else ""
-                question_hook = QuestionCraftingAgent().craft_question(
-                    thesis=thesis,
-                    hook_type=hook_type,
-                    topic_keywords=topic_keywords,
-                )
-                log.info("✓ QuestionCraftingAgent: Hook crafted → '%s'", question_hook)
-            except Exception as q_err:
-                log.warning(
-                    "QuestionCraftingAgent notice (%s); rewriter + Pydantic validator will enforce question format as fallback.",
-                    q_err,
-                )
+                from src.agents.channel_director import ChannelDirectorAgent
+                director = ChannelDirectorAgent()
+                strategic_brief = director.formulate_strategic_brief(topic_data=topic_data)
+                if strategic_brief and strategic_brief.topic_thesis:
+                    # Elevate thesis with the Director's cynical framing while keeping real-world source_id
+                    thesis = strategic_brief.topic_thesis
+                    topic_data["thesis"] = thesis
+                    log.info("✓ Channel Director Strategic Brief elevated topic: '%s'", thesis)
+                    log.info("Strategic Angle: %s", strategic_brief.strategic_angle)
+            except Exception as dir_err:
+                log.warning("Director Agent brief notice (%s); proceeding with raw sourced topic", dir_err)
+                strategic_brief = None
 
-            script = script_agent.generate_script(
-                thesis, channel, story_seed=story_seed, question_hook=question_hook
-            )
-            script_dict = script_agent.script_to_dict(script)
-
-            # Engage English Script Doctor to guarantee 5-7 word hook, eliminate citations,
-            # enforce unique visual prompts, and attach seamless curiosity loop connector.
-            script_dict = rewriter.auto_repair_script(script_dict, topic=thesis)
-
-            # ── Phase 2.5: Pre-publication Fact-Check Gate ─────────────
-            # Nothing reaches TTS, rendering, or any platform with unverified
-            # claims. Fail-closed: an unrunnable check also halts the run.
-            if settings.FACT_CHECK_ENABLED:
-                from src.agents.fact_check_agent import FactCheckAgent
-                fc_agent = FactCheckAgent()
-                fc_result = fc_agent.check_script(script_dict, thesis=thesis, source_excerpt=str(story_seed.get("source_excerpt", "")))
-
-                # One regeneration attempt: feed the blocked claims back to the
-                # writer so it can drop/rephrase them, then re-run the gate.
-                # The gate itself is never weakened - a second failure still halts.
-                if not fc_result.passed and fc_result.check_ran and fc_result.blocking_claims:
-                    forbidden = [
-                        str(c.get("claim", "")).strip()
-                        for c in fc_result.blocking_claims
-                        if str(c.get("claim", "")).strip()
-                    ]
-                    if forbidden:
-                        log.warning(
-                            "Fact-check blocked the draft; regenerating the script once without %d failed claim(s)...",
-                            len(forbidden),
-                        )
-                        script = script_agent.generate_script(
-                            thesis,
-                            channel,
-                            story_seed=story_seed,
-                            question_hook="",
-                            forbidden_claims=forbidden,
-                        )
-                        script_dict = script_agent.script_to_dict(script)
-                        script_dict = rewriter.auto_repair_script(script_dict, topic=thesis)
-                        fc_result = fc_agent.check_script(script_dict, thesis=thesis, source_excerpt=str(story_seed.get("source_excerpt", "")))
-
-                if not fc_result.passed:
-                    blocking = fc_result.check_ran or settings.FACT_CHECK_REQUIRED
-                    if blocking:
-                        log.warning("🛑 FACT-CHECK GATE: halting run before any publishing. %s", fc_result.summary())
-                        if settings.ENABLE_TELEGRAM:
-                            try:
-                                telegram_notifier.send_completion_notification(
-                                    title=script_dict.get("title", "(untitled)"),
-                                    thesis=thesis,
-                                    custom_message=(
-                                        "🛑 Today's Short was blocked by the fact-check gate.\n\n"
-                                        + fc_result.summary()[:700]
-                                    ),
-                                )
-                            except Exception as tg_err:
-                                log.warning("Telegram fact-check notice failed: %s", tg_err)
+            # ── Phase 1.5: Dedup Gate ─────────────────────────────────────────
+            with PhaseTimer("Phase 1.5: Dedup Gate"):
+                is_dup, score, match = evaluator.is_duplicate(thesis)
+                if is_dup:
+                    log.warning("🛑 Topic is too similar to '%s' (score %.2f). Switching to fresh evergreen seed...", match, score)
+                    from src.agents.topic_agent import _EVERGREEN_TOPICS, summarize_to_story_seed
+                    found_fresh = False
+                    for eg in _EVERGREEN_TOPICS:
+                        eg_dup, _, _ = evaluator.is_duplicate(eg)
+                        if not eg_dup:
+                            thesis = eg
+                            channel = "Market Debunk Research"
+                            seed_data = summarize_to_story_seed(f"FINANCIAL CONCEPT: {eg}", eg)
+                            story_seed = seed_data.get("story_seed", {})
+                            log.info("✓ Switched to fresh evergreen topic: '%s'", thesis)
+                            found_fresh = True
+                            break
+                    if not found_fresh:
+                        log.warning("All evergreen topics duplicate recent history. Halting to prevent feed spam.")
                         sys.exit(0)
-                    log.warning("Fact-check failed but FACT_CHECK_REQUIRED=false; continuing unchecked.")
+                log.info("Topic passed uniqueness check.")
 
-            is_dup, score, match = evaluator.is_duplicate(script_dict["title"], threshold=0.78)
-            if is_dup:
-                log.warning("Generated title duplicates '%s' (similarity %.2f). Auto-correcting title angle...", match, score)
-                from src.utils.youtube_titles import format_high_reach_title, resolve_high_reach_keyword
-                concept = story_seed.get("concept", "") if isinstance(story_seed, dict) else ""
-                clean_title = script_dict["title"].replace("#Shorts", "").strip(" :|-")
-                keyword = resolve_high_reach_keyword(f"{thesis} {clean_title} {concept}")
+            # ── Phase 2: Script Generation (with Script Doctor) ───────────────
+            with PhaseTimer("Phase 2: Script Generation"):
+                rewriter = EnglishScriptRewriterAgent()
+
+                # ── Phase 1.75: Question Crafting (Anti-Repetition Hook) ──────
+                question_hook = ""
                 if bool(getattr(settings, "STORY_MODE", False)):
-                    # Story Mode: keep the story title, add a chapter marker.
-                    script_dict["title"] = f"{clean_title} - Another Chapter"[:55]
-                else:
-                    # Remove keyword from clean_title if it starts with it
-                    if clean_title.lower().startswith(keyword.lower()):
-                        clean_title = clean_title[len(keyword):].strip(" :|-")
-                    script_dict["title"] = format_high_reach_title(keyword, f"Exposing {clean_title}", max_length=55)
-                log.info("✓ Auto-corrected title to: '%s'", script_dict["title"])
+                    log.info("Story mode: paradox cold-open replaces the question hook; skipping QuestionCraftingAgent.")
+                try:
+                    if bool(getattr(settings, "STORY_MODE", False)):
+                        raise ValueError("story mode active")
+                    from src.agents.question_agent import QuestionCraftingAgent
+                    hook_type = getattr(strategic_brief, "hook_type", "LOSS_IMPLICATION") if strategic_brief else "LOSS_IMPLICATION"
+                    topic_keywords = story_seed.get("concept_name", "") if isinstance(story_seed, dict) else ""
+                    question_hook = QuestionCraftingAgent().craft_question(
+                        thesis=thesis,
+                        hook_type=hook_type,
+                        topic_keywords=topic_keywords,
+                    )
+                    log.info("✓ QuestionCraftingAgent: Hook crafted → '%s'", question_hook)
+                except Exception as q_err:
+                    log.warning(
+                        "QuestionCraftingAgent notice (%s); rewriter + Pydantic validator will enforce question format as fallback.",
+                        q_err,
+                    )
 
-            # Preflight timing before any TTS or visual generation.
-            estimated_seconds = sum(
-                len(scene.get("narration", "").split())
-                for scene in script_dict["scenes"]
-            ) / 2.3
-            # The voice agent has automatic atempo clamping (15.0s - 42.0s),
-            # so allow a safe window and let voice_agent clamp rather than failing early.
-            if not 14 <= estimated_seconds <= 46:
-                log.warning("Estimated duration %.1fs outside ideal window; voice agent will apply atempo clamping", estimated_seconds)
+                script = script_agent.generate_script(
+                    thesis, channel, story_seed=story_seed, question_hook=question_hook
+                )
+                script_dict = script_agent.script_to_dict(script)
+
+                # Engage English Script Doctor to guarantee 5-7 word hook, eliminate citations,
+                # enforce unique visual prompts, and attach seamless curiosity loop connector.
+                script_dict = rewriter.auto_repair_script(script_dict, topic=thesis)
+
+                # ── Phase 2.5: Pre-publication Fact-Check Gate ─────────────
+                # Nothing reaches TTS, rendering, or any platform with unverified
+                # claims. Fail-closed: an unrunnable check also halts the run.
+                if settings.FACT_CHECK_ENABLED:
+                    from src.agents.fact_check_agent import FactCheckAgent
+                    fc_agent = FactCheckAgent()
+                    fc_result = fc_agent.check_script(script_dict, thesis=thesis, source_excerpt=str(story_seed.get("source_excerpt", "")))
+
+                    # One regeneration attempt: feed the blocked claims back to the
+                    # writer so it can drop/rephrase them, then re-run the gate.
+                    # The gate itself is never weakened - a second failure still halts.
+                    if not fc_result.passed and fc_result.check_ran and fc_result.blocking_claims:
+                        forbidden = [
+                            str(c.get("claim", "")).strip()
+                            for c in fc_result.blocking_claims
+                            if str(c.get("claim", "")).strip()
+                        ]
+                        if forbidden:
+                            log.warning(
+                                "Fact-check blocked the draft; regenerating the script once without %d failed claim(s)...",
+                                len(forbidden),
+                            )
+                            script = script_agent.generate_script(
+                                thesis,
+                                channel,
+                                story_seed=story_seed,
+                                question_hook="",
+                                forbidden_claims=forbidden,
+                            )
+                            script_dict = script_agent.script_to_dict(script)
+                            script_dict = rewriter.auto_repair_script(script_dict, topic=thesis)
+                            fc_result = fc_agent.check_script(script_dict, thesis=thesis, source_excerpt=str(story_seed.get("source_excerpt", "")))
+
+                    if not fc_result.passed:
+                        blocking = fc_result.check_ran or settings.FACT_CHECK_REQUIRED
+                        if blocking:
+                            log.warning("🛑 FACT-CHECK GATE: halting run before any publishing. %s", fc_result.summary())
+                            if settings.ENABLE_TELEGRAM:
+                                try:
+                                    telegram_notifier.send_completion_notification(
+                                        title=script_dict.get("title", "(untitled)"),
+                                        thesis=thesis,
+                                        custom_message=(
+                                            "🛑 Today's Short was blocked by the fact-check gate.\n\n"
+                                            + fc_result.summary()[:700]
+                                        ),
+                                    )
+                                except Exception as tg_err:
+                                    log.warning("Telegram fact-check notice failed: %s", tg_err)
+                            sys.exit(0)
+                        log.warning("Fact-check failed but FACT_CHECK_REQUIRED=false; continuing unchecked.")
+
+                is_dup, score, match = evaluator.is_duplicate(script_dict["title"], threshold=0.78)
+                if is_dup:
+                    log.warning("Generated title duplicates '%s' (similarity %.2f). Auto-correcting title angle...", match, score)
+                    from src.utils.youtube_titles import format_high_reach_title, resolve_high_reach_keyword
+                    concept = story_seed.get("concept", "") if isinstance(story_seed, dict) else ""
+                    clean_title = script_dict["title"].replace("#Shorts", "").strip(" :|-")
+                    keyword = resolve_high_reach_keyword(f"{thesis} {clean_title} {concept}")
+                    if bool(getattr(settings, "STORY_MODE", False)):
+                        # Story Mode: keep the story title, add a chapter marker.
+                        script_dict["title"] = f"{clean_title} - Another Chapter"[:55]
+                    else:
+                        # Remove keyword from clean_title if it starts with it
+                        if clean_title.lower().startswith(keyword.lower()):
+                            clean_title = clean_title[len(keyword):].strip(" :|-")
+                        script_dict["title"] = format_high_reach_title(keyword, f"Exposing {clean_title}", max_length=55)
+                    log.info("✓ Auto-corrected title to: '%s'", script_dict["title"])
+
+                # Preflight timing before any TTS or visual generation.
+                estimated_seconds = sum(
+                    len(scene.get("narration", "").split())
+                    for scene in script_dict["scenes"]
+                ) / 2.3
+                # The voice agent has automatic atempo clamping (15.0s - 42.0s),
+                # so allow a safe window and let voice_agent clamp rather than failing early.
+                if not 14 <= estimated_seconds <= 46:
+                    log.warning("Estimated duration %.1fs outside ideal window; voice agent will apply atempo clamping", estimated_seconds)
             
-            # Save script to output for debugging
-            script_path = run_dir / "script.json"
-            import json
-            script_path.write_text(json.dumps(script_dict, indent=2), encoding="utf-8")
+                # Save script to output for debugging
+                script_path = run_dir / "script.json"
+                import json
+                script_path.write_text(json.dumps(script_dict, indent=2), encoding="utf-8")
 
 
-        # ── Phase 3: Voice Synthesis ──────────────────────────────────────
-        with PhaseTimer("Phase 3: Voice Synthesis"):
-            voice_results = voice_agent.synthesize_all_scenes(script_dict["scenes"], audio_dir)
-            stats["total_duration"] = sum(r["duration"] for r in voice_results)
-            quality_gate.validate_duration(stats["total_duration"])
+            # ── Phase 3: Voice Synthesis ──────────────────────────────────────
+            with PhaseTimer("Phase 3: Voice Synthesis"):
+                voice_results = voice_agent.synthesize_all_scenes(script_dict["scenes"], audio_dir)
+                stats["total_duration"] = sum(r["duration"] for r in voice_results)
+                quality_gate.validate_duration(stats["total_duration"])
+
+
+            if pipeline_phase == "prepare":
+                # ── Prepare mode: persist state and stop before visuals ──
+                import json as _json
+                state = {
+                    "run_id": run_id,
+                    "run_dir": str(run_dir),
+                    "topic_data": topic_data,
+                    "thesis": thesis,
+                    "story_seed": story_seed,
+                    "script_dict": script_dict,
+                    "voice_results": [
+                        {
+                            "scene_id": vr["scene_id"],
+                            "mp3_rel": str(Path(vr["mp3_path"]).relative_to(run_dir)),
+                            "timings_rel": str(Path(vr["timings_path"]).relative_to(run_dir)),
+                            "duration": vr["duration"],
+                            "word_timings": vr.get("word_timings", []),
+                        }
+                        for vr in voice_results
+                    ],
+                    "stats": stats,
+                    "strategic_brief": strategic_brief.model_dump() if strategic_brief else None,
+                }
+                (run_dir / "phase_a_state.json").write_text(_json.dumps(state, indent=2), encoding="utf-8")
+                log.info("Prepare mode: Phase A state saved to %s; stopping before visuals.", run_dir / "phase_a_state.json")
+                sys.exit(0)
 
         # ── Phase 4: Visual Sourcing ──────────────────────────────────────
         with PhaseTimer("Phase 4: Visual Sourcing"):
@@ -394,6 +460,13 @@ def run_pipeline():
                 )
             except Exception as rec_err:
                 log.warning("Failed to record publication to ledger: %s", rec_err)
+
+            # Topic bank: mark the candidate consumed ONLY after a successful publish
+            try:
+                from src.agents import topic_queue
+                topic_queue.mark_consumed(topic_data.get("queue_candidate_id"))
+            except Exception as tq_err:
+                log.warning("Topic bank consumption marking skipped: %s", tq_err)
 
             # Autonomous Community Engagement (Channel Director)
             if director and strategic_brief:

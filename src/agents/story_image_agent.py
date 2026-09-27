@@ -15,6 +15,8 @@ Provider policy (per owner decision, 2026-09-27):
 from __future__ import annotations
 
 import base64
+import os
+import shutil
 import time
 from pathlib import Path
 from typing import Optional
@@ -142,6 +144,20 @@ def generate_scene_image(scene: dict, output_dir: Path) -> Optional[Path]:
     scene_id = scene.get("scene_id", 0)
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / f"scene_{scene_id}.png"
+
+    # Externally supplied images mode (agent-rendered scene packs): when
+    # STORY_IMAGES_INBOX is set, scenes come ONLY from that directory and any
+    # missing scene halts the run - never an API call, never a substitute.
+    inbox = (os.environ.get("STORY_IMAGES_INBOX") or "").strip()
+    if inbox:
+        supplied = Path(inbox) / f"scene_{scene_id}.png"
+        if supplied.is_file() and supplied.stat().st_size > 10000:
+            shutil.copy2(supplied, output_path)
+            log.info("Scene %s story image supplied externally (%d bytes)", scene_id, output_path.stat().st_size)
+            return output_path
+        raise StoryImageUnavailable(
+            f"Scene {scene_id}: externally supplied image missing or too small at {supplied}"
+        )
 
     sheet_b64 = None
     if CHARACTER_SHEET_PATH.exists() and CHARACTER_SHEET_PATH.stat().st_size > 10000:
