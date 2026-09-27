@@ -339,32 +339,20 @@ class AnalyticsSensor:
         elif "v=" in video_id:
             clean_id = video_id.split("v=")[1].split("&")[0]
 
-        yt_key = getattr(settings, "YT_API_KEY", "").strip()
-        if yt_key:
-            url = "https://www.googleapis.com/youtube/v3/videos"
-            params = {
-                "part": "statistics",
-                "id": clean_id,
-                "key": yt_key,
+        def _stats_from(items):
+            if not items:
+                return {}
+            stats = items[0].get("statistics", {})
+            return {
+                "views": int(stats.get("viewCount", 0)),
+                "likes": int(stats.get("likeCount", 0)),
+                "comments": int(stats.get("commentCount", 0)),
+                "shares": 0,  # Not provided in base statistics
             }
-            try:
-                res = requests.get(url, params=params, timeout=10)
-                if res.status_code == 200:
-                    items = res.json().get("items", [])
-                    if items:
-                        stats = items[0].get("statistics", {})
-                        return {
-                            "views": int(stats.get("viewCount", 0)),
-                            "likes": int(stats.get("likeCount", 0)),
-                            "comments": int(stats.get("commentCount", 0)),
-                            "shares": 0  # Not provided in base statistics
-                        }
-                else:
-                    log.error("YouTube API failed with status %s: %s", res.status_code, res.text)
-            except Exception as e:
-                log.error("YouTube metrics fetch error: %s", e)
 
-        # Fallback to OAuth credentials if available
+        # OAuth first: the channel-owner token that uploads videos is the
+        # maintained credential. The YT_API_KEY path has 401'd for months
+        # (key restrictions/API enablement), leaving analytics blind.
         refresh_token = getattr(settings, "YT_REFRESH_TOKEN", "") or os.environ.get("YT_REFRESH_TOKEN", "")
         client_id = getattr(settings, "YT_CLIENT_ID", "") or os.environ.get("YT_CLIENT_ID", "")
         client_secret = getattr(settings, "YT_CLIENT_SECRET", "") or os.environ.get("YT_CLIENT_SECRET", "")
@@ -381,17 +369,44 @@ class AnalyticsSensor:
                 )
                 yt_service = build("youtube", "v3", credentials=creds, cache_discovery=False)
                 res = yt_service.videos().list(part="statistics", id=clean_id).execute()
-                items = res.get("items", [])
-                if items:
-                    stats = items[0].get("statistics", {})
-                    metrics = {
-                        "views": int(stats.get("viewCount", 0)),
-                        "likes": int(stats.get("likeCount", 0)),
-                        "comments": int(stats.get("commentCount", 0)),
-                    }
+                metrics = _stats_from(res.get("items", []))
+                if metrics:
                     log.info("✓ YouTube statistics via OAuth for %s: %s", clean_id, metrics)
                     return metrics
             except Exception as oauth_exc:
-                log.debug("YouTube statistics OAuth request failed: %s", oauth_exc)
+                # Was log.debug: this failure silently kept analytics empty.
+                # A 403 here means the OAuth consent scopes lack
+                # youtube.readonly - re-authorize the channel token with it.
+                log.error(
+                    "YouTube statistics OAuth request failed for %s: %s "
+                    "(if 403 insufficientPermissions, the channel token needs "
+                    "the youtube.readonly scope - re-run OAuth consent)",
+                    clean_id, oauth_exc,
+                )
+
+        # Fallback: API key (public statistics only).
+        yt_key = getattr(settings, "YT_API_KEY", "").strip()
+        if yt_key:
+            url = "https://www.googleapis.com/youtube/v3/videos"
+            params = {
+                "part": "statistics",
+                "id": clean_id,
+                "key": yt_key,
+            }
+            try:
+                res = requests.get(url, params=params, timeout=10)
+                if res.status_code == 200:
+                    metrics = _stats_from(res.json().get("items", []))
+                    if metrics:
+                        return metrics
+                else:
+                    log.error(
+                        "YouTube API key request failed with status %s: %s "
+                        "(check the key's restrictions and that YouTube Data "
+                        "API v3 is enabled on its Google Cloud project)",
+                        res.status_code, res.text,
+                    )
+            except Exception as e:
+                log.error("YouTube metrics fetch error: %s", e)
 
         return {}

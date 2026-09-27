@@ -136,3 +136,84 @@ def test_tuner_learns_only_from_real_rows(tmp_path, monkeypatch):
 
     assert playbook["analyzed_videos_count"] == 2
     assert playbook["data_status"] == "learning_from_real_analytics"
+
+
+def test_youtube_metrics_prefers_oauth_over_api_key(monkeypatch):
+    """OAuth (channel-owner token) is tried before the historically-401ing API key."""
+    import sys, types
+    from src.analytics.analytics_sensor import AnalyticsSensor
+
+    sensor = AnalyticsSensor()
+    monkeypatch.setattr("src.analytics.analytics_sensor.settings.YT_API_KEY", "KEY", raising=False)
+    monkeypatch.setattr("src.analytics.analytics_sensor.settings.YT_REFRESH_TOKEN", "rt", raising=False)
+    monkeypatch.setattr("src.analytics.analytics_sensor.settings.YT_CLIENT_ID", "cid", raising=False)
+    monkeypatch.setattr("src.analytics.analytics_sensor.settings.YT_CLIENT_SECRET", "cs", raising=False)
+
+    order = []
+
+    class FakeCreds:
+        def __init__(self, **k):
+            pass
+
+    fake_oauth = types.ModuleType("google.oauth2.credentials")
+    fake_oauth.Credentials = FakeCreds
+    monkeypatch.setitem(sys.modules, "google.oauth2.credentials", fake_oauth)
+
+    class FakeList:
+        def execute(self):
+            order.append("oauth")
+            return {"items": [{"statistics": {"viewCount": "10", "likeCount": "2", "commentCount": "1"}}]}
+
+    class FakeVideos:
+        def list(self, part=None, id=None):
+            return FakeList()
+
+    class FakeService:
+        def videos(self):
+            return FakeVideos()
+
+    fake_disc = types.ModuleType("googleapiclient.discovery")
+    fake_disc.build = lambda *a, **k: FakeService()
+    monkeypatch.setitem(sys.modules, "googleapiclient.discovery", fake_disc)
+
+    def api_key_get(url, params=None, timeout=None):
+        order.append("api_key")
+        raise AssertionError("API key path must not run when OAuth succeeds")
+
+    monkeypatch.setattr("src.analytics.analytics_sensor.requests.get", api_key_get)
+
+    metrics = sensor._fetch_youtube_metrics("abc123")
+    assert metrics["views"] == 10
+    assert order == ["oauth"]
+
+
+def test_youtube_metrics_falls_back_to_api_key(monkeypatch):
+    """If OAuth fails, the API-key path still runs and returns stats."""
+    import sys, types
+    from src.analytics.analytics_sensor import AnalyticsSensor
+
+    sensor = AnalyticsSensor()
+    monkeypatch.setattr("src.analytics.analytics_sensor.settings.YT_API_KEY", "KEY", raising=False)
+    monkeypatch.setattr("src.analytics.analytics_sensor.settings.YT_REFRESH_TOKEN", "rt", raising=False)
+    monkeypatch.setattr("src.analytics.analytics_sensor.settings.YT_CLIENT_ID", "cid", raising=False)
+    monkeypatch.setattr("src.analytics.analytics_sensor.settings.YT_CLIENT_SECRET", "cs", raising=False)
+
+    fake_oauth = types.ModuleType("google.oauth2.credentials")
+    fake_oauth.Credentials = lambda **k: None
+    monkeypatch.setitem(sys.modules, "google.oauth2.credentials", fake_oauth)
+
+    fake_disc = types.ModuleType("googleapiclient.discovery")
+    def boom(*a, **k):
+        raise RuntimeError("insufficientPermissions")
+    fake_disc.build = boom
+    monkeypatch.setitem(sys.modules, "googleapiclient.discovery", fake_disc)
+
+    class FakeRes:
+        status_code = 200
+        def json(self):
+            return {"items": [{"statistics": {"viewCount": "7", "likeCount": "1", "commentCount": "0"}}]}
+
+    monkeypatch.setattr("src.analytics.analytics_sensor.requests.get", lambda *a, **k: FakeRes())
+
+    metrics = sensor._fetch_youtube_metrics("abc123")
+    assert metrics["views"] == 7
