@@ -4,5 +4,11 @@
     "topic": "Your financial advisor is pushing high-risk equity on you not because you're you",
     "hook_type": "AUTHORITY_CHALLENGE",
     "channel": "english"
+  },
+  "Is your gold jewellery investment secretly losing money in making charges?": {
+    "ts": "2026-09-27T04:46:09.072958+00:00",
+    "topic": "The Income Tax Department isn't omnipotent; the Kolkata ITAT just proved that an",
+    "hook_type": "MYTH_BUST",
+    "channel": "english"
   }
 }
