@@ -10,5 +10,11 @@
     "topic": "The Income Tax Department isn't omnipotent; the Kolkata ITAT just proved that an",
     "hook_type": "MYTH_BUST",
     "channel": "english"
+  },
+  "Is your recurring deposit secretly losing value to inflation every year?": {
+    "ts": "2026-09-27T09:35:06.878614+00:00",
+    "topic": "Your brain is hard-wired to hallucinate profit patterns in random noise, and 'Te",
+    "hook_type": "LOSS_IMPLICATION",
+    "channel": "english"
   }
 }
