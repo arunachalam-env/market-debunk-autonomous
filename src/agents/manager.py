@@ -169,7 +169,34 @@ def run_pipeline():
             # claims. Fail-closed: an unrunnable check also halts the run.
             if settings.FACT_CHECK_ENABLED:
                 from src.agents.fact_check_agent import FactCheckAgent
-                fc_result = FactCheckAgent().check_script(script_dict, thesis=thesis)
+                fc_agent = FactCheckAgent()
+                fc_result = fc_agent.check_script(script_dict, thesis=thesis)
+
+                # One regeneration attempt: feed the blocked claims back to the
+                # writer so it can drop/rephrase them, then re-run the gate.
+                # The gate itself is never weakened - a second failure still halts.
+                if not fc_result.passed and fc_result.check_ran and fc_result.blocking_claims:
+                    forbidden = [
+                        str(c.get("claim", "")).strip()
+                        for c in fc_result.blocking_claims
+                        if str(c.get("claim", "")).strip()
+                    ]
+                    if forbidden:
+                        log.warning(
+                            "Fact-check blocked the draft; regenerating the script once without %d failed claim(s)...",
+                            len(forbidden),
+                        )
+                        script = script_agent.generate_script(
+                            thesis,
+                            channel,
+                            story_seed=story_seed,
+                            question_hook="",
+                            forbidden_claims=forbidden,
+                        )
+                        script_dict = script_agent.script_to_dict(script)
+                        script_dict = rewriter.auto_repair_script(script_dict, topic=thesis)
+                        fc_result = fc_agent.check_script(script_dict, thesis=thesis)
+
                 if not fc_result.passed:
                     blocking = fc_result.check_ran or settings.FACT_CHECK_REQUIRED
                     if blocking:

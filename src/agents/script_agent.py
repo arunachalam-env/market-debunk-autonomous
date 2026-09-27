@@ -533,6 +533,7 @@ def generate_script(
     story_seed: Optional[dict] = None,
     target_scenes: int = 6,
     question_hook: str = "",
+    forbidden_claims: Optional[list] = None,
 ) -> ScriptPayload:
     """
     Generate a Fast-Hook cinematic story script under 30 seconds (target 6 scenes, 55-75 words).
@@ -574,8 +575,21 @@ Safe Visual Evidence Object: {story_seed.get('visual_evidence', '')}
             "Example: 'Is your SIP silently eating 2% of your returns every year?'"
         )
 
+    forbidden_block = ""
+    if forbidden_claims:
+        listed = "\n".join(f"  - {c}" for c in forbidden_claims)
+        forbidden_block = (
+            "\nFACT-CHECK FEEDBACK: the previous draft of this script was blocked "
+            "because these claims could not be verified against current sources:\n"
+            f"{listed}\n"
+            "Rewrite WITHOUT them: drop every specific figure, percentage, and citation "
+            "below (and their close paraphrases), replacing them with qualitative "
+            "phrasing. Do not introduce ANY new specific figure that does not appear "
+            "verbatim in the thesis/story seed above.\n"
+        )
+
     user_prompt = f"""Core financial thesis: "{thesis}"
-{seed_context}
+{seed_context}{forbidden_block}
 Now generate the complete {target_scenes}-scene Fast-Hook cinematic short-story script (< 30s runtime, 55-75 words total) as JSON.
 Remember: Exactly {target_scenes} scenes.
 
