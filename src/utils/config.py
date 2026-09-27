@@ -113,7 +113,7 @@ class Settings:
     FACT_CHECK_ENABLED: bool = (_get("FACT_CHECK_ENABLED", default="true") or "true").lower() == "true"
     # When true, a failed/unrunnable check BLOCKS publication (fail-closed).
     FACT_CHECK_REQUIRED: bool = (_get("FACT_CHECK_REQUIRED", default="true") or "true").lower() == "true"
-    FACT_CHECK_MODEL: str = _get("FACT_CHECK_MODEL", default="gemini-2.5-flash") or "gemini-2.5-flash"
+    FACT_CHECK_MODEL: str = _get("FACT_CHECK_MODEL", default="gemini-3.8-flash") or "gemini-3.8-flash"
 
     # ── Deduplication ─────────────────────────────────────────────
     DEDUP_THRESHOLD: float = float(_get("DEDUP_THRESHOLD", default="0.75"))

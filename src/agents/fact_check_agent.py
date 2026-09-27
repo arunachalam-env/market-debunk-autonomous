@@ -137,16 +137,17 @@ class FactCheckAgent:
         from google import genai
         from google.genai import types
 
-        api_key = (
+        keys_str = (
             os.getenv("GEMINI_SCRIPT_API_KEY")
             or os.getenv("GEMINI_API_KEY")
+            or os.getenv("LLM_API_KEYS")
             or getattr(settings, "GEMINI_SCRIPT_API_KEY", "")
             or getattr(settings, "GEMINI_API_KEY", "")
+            or getattr(settings, "LLM_API_KEYS", "")
         )
-        if not api_key:
+        api_keys = [k.strip() for k in keys_str.split(",") if k.strip()]
+        if not api_keys:
             raise RuntimeError("no Gemini API key available for fact-checking")
-
-        client = genai.Client(api_key=api_key)
         prompt = f"""You are a meticulous financial fact-checker for an Indian retail-investor Shorts channel.
 
 Below is the full narration of a 25-second video (topic thesis: {thesis or 'n/a'}).
@@ -167,25 +168,37 @@ Return strict JSON only:
         candidates = [self.model] + [m for m in FACT_CHECK_MODEL_FALLBACKS if m != self.model]
         last_exc: Optional[Exception] = None
         for candidate in candidates:
-            try:
-                response = client.models.generate_content(
-                    model=candidate,
-                    contents=prompt,
-                    config=types.GenerateContentConfig(
-                        temperature=0.1,
-                        max_output_tokens=1500,
-                        tools=[types.Tool(google_search=types.GoogleSearch())],
-                    ),
-                )
-                if response and response.text:
-                    if candidate != self.model:
-                        log.warning("Fact-check model %s unavailable; used fallback %s.", self.model, candidate)
-                    return response.text
-                last_exc = RuntimeError("empty response from fact-check model")
-            except Exception as exc:
-                last_exc = exc
-                if "NOT_FOUND" in str(exc) or "no longer available" in str(exc):
-                    log.warning("Fact-check model %s not available; trying next fallback.", candidate)
-                    continue
-                raise
-        raise RuntimeError(f"all fact-check models failed: {last_exc}")
+            for key_index, api_key in enumerate(api_keys):
+                client = genai.Client(api_key=api_key)
+                try:
+                    response = client.models.generate_content(
+                        model=candidate,
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            temperature=0.1,
+                            max_output_tokens=1500,
+                            tools=[types.Tool(google_search=types.GoogleSearch())],
+                        ),
+                    )
+                    if response and response.text:
+                        if candidate != self.model or key_index > 0:
+                            log.warning(
+                                "Fact-check succeeded with fallback (model %s, key #%d).",
+                                candidate, key_index + 1,
+                            )
+                        return response.text
+                    last_exc = RuntimeError("empty response from fact-check model")
+                except Exception as exc:
+                    last_exc = exc
+                    msg = str(exc)
+                    if "NOT_FOUND" in msg or "no longer available" in msg:
+                        log.warning("Fact-check model %s not available; trying next model.", candidate)
+                        break  # next model, same key set
+                    if "429" in msg or "RESOURCE_EXHAUSTED" in msg:
+                        if key_index + 1 < len(api_keys):
+                            log.warning("Fact-check quota exhausted on key #%d for %s; rotating key.", key_index + 1, candidate)
+                            continue  # next key, same model
+                        log.warning("Fact-check quota exhausted on all keys for %s; trying next model.", candidate)
+                        break  # next model
+                    raise
+        raise RuntimeError(f"all fact-check models/keys failed: {last_exc}")

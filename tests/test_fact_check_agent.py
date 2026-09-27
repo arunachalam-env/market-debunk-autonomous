@@ -2,6 +2,7 @@
 import json
 
 from src.agents.fact_check_agent import (
+    FACT_CHECK_MODEL_FALLBACKS,
     FactCheckAgent,
     FactCheckResult,
     evaluate_claims,
@@ -106,8 +107,8 @@ def test_model_fallback_on_not_found(monkeypatch):
     assert calls[0] != calls[1]
 
 
-def test_non_model_error_does_not_fallback(monkeypatch):
-    """A quota/auth error raises immediately instead of walking the list."""
+def test_quota_error_walks_models_then_raises(monkeypatch):
+    """With a single exhausted key, a 429 walks all candidate models, then fails closed."""
     import pytest
     agent = FactCheckAgent()
     calls = []
@@ -124,6 +125,63 @@ def test_non_model_error_does_not_fallback(monkeypatch):
     from google import genai
     monkeypatch.setattr(genai, "Client", lambda api_key=None: FakeClient())
 
-    with pytest.raises(Exception, match="429"):
+    with pytest.raises(Exception, match="all fact-check models/keys failed"):
+        agent._verify_with_grounded_model("Your SIP is losing 2% yearly", "t")
+    assert len(calls) == 1 + len(FACT_CHECK_MODEL_FALLBACKS) - 1  # primary + distinct fallbacks
+
+
+def test_quota_error_rotates_keys(monkeypatch):
+    """A 429 on the first key retries the same model with the next key."""
+    agent = FactCheckAgent()
+    calls = []
+
+    class FakeResponse:
+        text = '{"claims": []}'
+
+    class FakeModels:
+        def __init__(self, key):
+            self.key = key
+
+        def generate_content(self, model=None, contents=None, config=None):
+            calls.append((self.key, model))
+            if self.key == "key1":
+                raise Exception("429 RESOURCE_EXHAUSTED")
+            return FakeResponse()
+
+    class FakeClient:
+        def __init__(self, api_key=None):
+            self.models = FakeModels(api_key)
+
+    monkeypatch.setenv("LLM_API_KEYS", "key1,key2")
+    monkeypatch.delenv("GEMINI_SCRIPT_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    from google import genai
+    monkeypatch.setattr(genai, "Client", FakeClient)
+
+    raw = agent._verify_with_grounded_model("Your SIP is losing 2% yearly", "t")
+    assert raw == '{"claims": []}'
+    assert calls[0][0] == "key1" and calls[1][0] == "key2"
+    assert calls[0][1] == calls[1][1]  # same model, rotated key
+
+
+def test_auth_error_raises_immediately(monkeypatch):
+    """A non-quota, non-availability error raises at once - no masking."""
+    import pytest
+    agent = FactCheckAgent()
+    calls = []
+
+    class FakeModels:
+        def generate_content(self, model=None, contents=None, config=None):
+            calls.append(model)
+            raise Exception("403 PERMISSION_DENIED")
+
+    class FakeClient:
+        models = FakeModels()
+
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    from google import genai
+    monkeypatch.setattr(genai, "Client", lambda api_key=None: FakeClient())
+
+    with pytest.raises(Exception, match="403"):
         agent._verify_with_grounded_model("Your SIP is losing 2% yearly", "t")
     assert len(calls) == 1
