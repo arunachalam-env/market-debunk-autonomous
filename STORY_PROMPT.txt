@@ -13,7 +13,13 @@ THE 7-BEAT FORMULA (map beats across 10-14 scenes, one visual per scene):
    rates, and dates from the sourced story at every beat. The viewer follows the money.
 4. THE COST LANDS (scenes 7-9): the hidden consequence hits Arun specifically and emotionally.
 5. NAME THE CONCEPT (scene ~10): "In economics, this is called X." The viewer leaves owning
-   a new term. Use the concept from the story seed; if none fits, name the real mechanism plainly.
+   a new term. CRITICAL: X must be a REAL, established economics/finance term that a
+   fact-checker can verify in public sources (e.g. liability cap, moral hazard, adverse
+   selection, principal-agent problem, rent-seeking, deadweight loss, information
+   asymmetry, regulatory arbitrage, compound interest, expense ratio). The story seed's
+   concept label may be informal or invented - never coin a new term and never present a
+   made-up label as an established concept. If no real term fits cleanly, SKIP the naming
+   sentence entirely and describe the mechanism in plain words instead.
 6. BRIDGE TO TODAY (scene ~11): "You see this today in..." - name the REAL Indian company,
    product, bank, or scheme from the sourced story. Named entities only, never "some banks".
 7. "SO, WHAT DID WE LEARN?" (final scenes): exactly 3 ultra-short takeaways, each a complete
