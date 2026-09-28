@@ -121,7 +121,9 @@ def _build_scene_from_image(
     fps = settings.VIDEO_FPS
     n_frames = int(duration * fps)
 
-    # Vary the zoom direction based on scene_id to prevent repetitive motion
+    # Vary the zoom direction based on scene_id to prevent repetitive motion.
+    # Owner rule 2026-09-28: Ken Burns on every scene, ALTERNATING zoom sense
+    # (in on even scenes, out on odd), subtle enough for subtitle readability.
     pan_type = scene_id % 3
     if pan_type == 0:
         zp_motion = "x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
@@ -129,6 +131,10 @@ def _build_scene_from_image(
         zp_motion = "x='iw/2-(iw/zoom/2)+2':y='ih/2-(ih/zoom/2)'"
     else:
         zp_motion = "x='iw/2-(iw/zoom/2)-2':y='ih/2-(ih/zoom/2)'"
+    if scene_id % 2 == 0:
+        zp_zoom = "z='if(lte(on,1),1.05,max(zoom-0.0008,1.0))'"
+    else:
+        zp_zoom = "z='min(zoom+0.0008,1.05)'"
 
     if is_avatar:
         # Talking mouth movement animation synchronized with speech cadence (4.2 Hz)
@@ -159,7 +165,7 @@ def _build_scene_from_image(
             f"scale={w}:{h}:force_original_aspect_ratio=increase," # Fill frame, no black bars
             f"crop={w}:{h},"
             f"setsar=1,"
-            f"zoompan=z='min(zoom+0.0008,1.05)':{zp_motion}:d={n_frames}:s={w}x{h}:fps={fps}"
+            f"zoompan={zp_zoom}:{zp_motion}:d={n_frames}:s={w}x{h}:fps={fps}"
         )
         _ffmpeg(
             "-loop", "1",
