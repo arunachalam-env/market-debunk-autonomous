@@ -1371,7 +1371,8 @@
       "instagram": "17905144596574400",
       "facebook": "2008120706566762"
     },
-    "audited": false
+    "audited": false,
+    "audit_attempts": 1
   },
   {
     "timestamp": "2026-09-26T17:07:19.872090+00:00",
@@ -1538,6 +1539,34 @@
       "youtube": null,
       "instagram": null,
       "facebook": "1651526786691118"
+    },
+    "audited": false
+  },
+  {
+    "timestamp": "2026-09-28T02:31:40.252887+00:00",
+    "title": "Rights Issue: The Hidden Dilution Trap #Shorts",
+    "topic": "A Rights Issue is not a discounted loyalty reward from management, but a corporate shakedown forcing you to inject fresh cash or suffer silent equity dilution.",
+    "hook": "⚠️ That \"discounted\" rights issue is actually a trap for your portfolio",
+    "hashtags": [
+      "#MarketDebunk",
+      "#StockMarketMyths",
+      "#DividendStocks",
+      "#InvestingTruths",
+      "#MarketTrap",
+      "#IndianStockMarket",
+      "#NiftyAlert",
+      "#NSEIndia"
+    ],
+    "duration_seconds": 81.50204100000002,
+    "urls": {
+      "youtube": null,
+      "instagram": null,
+      "facebook": "https://www.facebook.com/reel/1669758644573743/"
+    },
+    "ids": {
+      "youtube": null,
+      "instagram": null,
+      "facebook": "1669758644573743"
     },
     "audited": false
   }
