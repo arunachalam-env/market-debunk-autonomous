@@ -281,6 +281,46 @@ def _synthesize_elevenlabs(
     return False
 
 
+
+def _contains_tamil(text: str) -> bool:
+    return any('\u0b80' <= ch <= '\u0bff' for ch in text or '')
+
+
+def _synthesize_gcp_tts(
+    text: str,
+    output_path: Path,
+    api_key: str,
+    voice_name: str,
+) -> bool:
+    """Google Cloud Text-to-Speech Chirp3-HD (Tamil ta-IN). Primary route for Tamil scenes."""
+    import base64 as _b64
+    import requests
+    if not api_key:
+        return False
+    url = f"https://texttospeech.googleapis.com/v1/text:synthesize?key={api_key}"
+    payload = {
+        "input": {"text": text},
+        "voice": {"languageCode": "ta-IN", "name": voice_name},
+        "audioConfig": {"audioEncoding": "MP3"},
+    }
+    for attempt in range(1, 4):
+        try:
+            res = requests.post(url, json=payload, timeout=40)
+            if res.status_code == 200:
+                data = res.json()
+                audio = data.get("audioContent")
+                if audio:
+                    output_path.write_bytes(_b64.b64decode(audio))
+                    return True
+                log.warning("GCP TTS 200 but no audioContent: %s", str(data)[:200])
+            else:
+                log.warning("GCP TTS returned HTTP %d: %s", res.status_code, res.text[:200])
+            time.sleep(2)
+        except Exception as exc:
+            log.warning("GCP TTS attempt %d failed: %s", attempt, exc)
+            time.sleep(2)
+    return False
+
 def synthesize_scene(
     scene_id: int,
     narration: str,
@@ -302,6 +342,7 @@ def synthesize_scene(
     # HER = Fish "Sarah" at 1.2x with a +3dB boost (owner ear-picked 2026-09-28 7:41-7:43am).
     speed = 1.12
     volume = 0.0
+    is_tamil = _contains_tamil(narration)
     if (speaker or "").strip().upper() == "HER":
         voice_id = getattr(settings, "FISH_AUDIO_VOICE_ID_HER", "") or os.environ.get("FISH_AUDIO_VOICE_ID_HER", "933563129e564b19a115bedd57b7406a")
         try:
@@ -316,19 +357,32 @@ def synthesize_scene(
     clean_text = normalize_english_for_tts(narration)
     log.info("🎙️ Synthesizing scene %d with Fish Audio S2.1 Pro (Voice ID: %s, temp: 0.92)...", scene_id, voice_id)
 
-    success = _synthesize_fish_audio(
-        text=clean_text,
-        output_path=raw_mp3_path,
-        voice_id=voice_id,
-        api_key=api_key,
-        model_string=model_str,
-        speed=speed,
-        volume=volume,
-    )
+    if is_tamil:
+        # Tamil route (owner-locked 2026-09-28): Google Chirp3-HD, native Tamil script.
+        # ARUN -> Charon, HER -> Aoede. Fish remains the non-Tamil path.
+        gcp_key = getattr(settings, "GCP_TTS_API_KEY", "") or os.environ.get("GCP_TTS_API_KEY", "")
+        gcp_voice = (getattr(settings, "GCP_TTS_VOICE_HER_TA", "") or os.environ.get("GCP_TTS_VOICE_HER_TA", "ta-IN-Chirp3-HD-Aoede")) if (speaker or "").strip().upper() == "HER" else (getattr(settings, "GCP_TTS_VOICE_ARUN_TA", "") or os.environ.get("GCP_TTS_VOICE_ARUN_TA", "ta-IN-Chirp3-HD-Charon"))
+        log.info("🎙️ Tamil scene %d via Google Chirp3-HD (%s)...", scene_id, gcp_voice)
+        success = _synthesize_gcp_tts(
+            text=narration,
+            output_path=raw_mp3_path,
+            api_key=gcp_key,
+            voice_name=gcp_voice,
+        )
+    else:
+        success = _synthesize_fish_audio(
+            text=clean_text,
+            output_path=raw_mp3_path,
+            voice_id=voice_id,
+            api_key=api_key,
+            model_string=model_str,
+            speed=speed,
+            volume=volume,
+        )
 
     if not success or not raw_mp3_path.exists():
-        log.error("❌ Mandatory Fish Audio S2.1 Pro failed for scene %d.", scene_id)
-        raise RuntimeError(f"Fish Audio voice synthesis is mandatory and failed for scene {scene_id}. Check API key and quota.")
+        log.error("❌ Mandatory TTS failed for scene %d (tamil=%s).", scene_id, is_tamil)
+        raise RuntimeError(f"Voice synthesis is mandatory and failed for scene {scene_id} (tamil={is_tamil}). Check API key and quota.")
 
     # Trim silence to ensure fluid pacing across scene cuts
     trim_audio_silence(raw_mp3_path, mp3_path)
