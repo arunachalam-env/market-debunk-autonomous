@@ -33,8 +33,10 @@ CHARACTER_SHEET_PATH = Path("assets") / "character" / "arun_sheet.png"
 # Locked visual identity. Keep in sync with CHARACTER.md.
 STYLE_TAG = (
     "Muted hand-painted storybook illustration, graphic-novel watercolor texture, "
-    "warm sepia-and-olive palette with soft amber lamplight, slightly desaturated colors, "
-    "clean lines, gentle painterly shading, calm cinematic composition, cozy but melancholic mood."
+    "fintech-cool grade: deep teal-and-navy night shadows with one warm amber accent "
+    "(desk lamp glow, steel tumbler), slightly higher contrast, no sepia, clean lines, "
+    "gentle painterly shading, calm cinematic composition, premium corporate feel. "
+    "Palette owner-locked 2026-09-28 for the sprint - no palette churn."
 )
 
 CHARACTER_BIBLE = (
