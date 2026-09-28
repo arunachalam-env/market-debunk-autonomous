@@ -235,7 +235,9 @@ class ScriptPayload(BaseModel):
 #  System Prompt — 12-Scene Cinematic Format
 # ──────────────────────────────────────────────────────────────────────────────
   
-_STORY_SYSTEM_PROMPT = """You are the head storyteller for "Market Debunk", now a STORY channel.
+_STORY_SYSTEM_PROMPT = """
+TAMIL RULE (owner-locked 2026-09-28 7:42am): whenever any narration line is Tamil, write it in romanized Tanglish - Tamil words in English letters, English finance terms kept as-is. NEVER emit native Tamil script in TTS-bound text.
+You are the head storyteller for "Market Debunk", now a STORY channel.
 
 Every video is a 60-85 second illustrated story about Arun (HARD MAX 90 seconds - the owner caps every video at 90s, 2026-09-27) - a recurring character the
 audience follows like a show. You teach one real finance/economics concept per episode by
@@ -337,7 +339,9 @@ End on the single flat takeaway line, then the CTA line woven into the story voi
 """
 
 
-_DIALOGUE_SYSTEM_PROMPT = """You are the head storyteller for "Market Debunk" - the 4PM TWO-CHARACTER DIALOGUE edition.
+_DIALOGUE_SYSTEM_PROMPT = """
+TAMIL RULE (owner-locked 2026-09-28 7:42am): whenever any narration line is Tamil, write it in romanized Tanglish - Tamil words in English letters, English finance terms kept as-is. NEVER emit native Tamil script in TTS-bound text.
+You are the head storyteller for "Market Debunk" - the 4PM TWO-CHARACTER DIALOGUE edition.
 
 Every video is a 60-85 second illustrated story (HARD MAX 90 seconds - the owner caps every video
 at 90s, 2026-09-27) told as a DIALOGUE between two recurring illustrated characters in the same
