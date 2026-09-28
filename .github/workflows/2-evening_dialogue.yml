@@ -1,0 +1,228 @@
+name: Evening Dialogue Video Pipeline (4PM Liya-Arun Two-Character Edition)
+
+on:
+  workflow_dispatch: # Allow manual trigger from GitHub UI
+    inputs:
+      skip_publish:
+        description: 'Generate the video but do not publish anywhere (test mode)'
+        required: false
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+      phase:
+        description: 'full = normal one-shot run; prepare = topic+script+voice only (saves Phase A state); produce = assemble+publish from Phase A state'
+        required: false
+        default: 'full'
+        type: choice
+        options: ['full', 'prepare', 'produce']
+      state_run_id:
+        description: '(produce) Run ID of the prepare run whose phase-a-state artifact to restore'
+        required: false
+        default: ''
+        type: string
+      image_pack:
+        description: '(produce) Release tag containing scenes.tar.gz of externally rendered scene images'
+        required: false
+        default: ''
+        type: string
+      pack_url:
+        description: '(produce) Direct URL to scenes.tar.gz of externally rendered scene images (alternative to image_pack release tag)'
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to commit dedup history back to repo
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv (Fast Package Manager)
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Install Dependencies
+        run: uv pip install --system -r requirements.txt
+
+      - name: Install Bebas Neue Font
+        run: |
+          mkdir -p ~/.local/share/fonts
+          echo "Downloading Playfair Display (storybook serif) from Google Fonts repository..."
+          curl -fL "https://github.com/google/fonts/raw/main/ofl/playfairdisplay/PlayfairDisplay%5Bwght%5D.ttf" \
+            -o ~/.local/share/fonts/PlayfairDisplay.ttf || true
+          curl -fL "https://github.com/google/fonts/raw/main/ofl/playfairdisplay/PlayfairDisplay-Italic%5Bwght%5D.ttf" \
+            -o ~/.local/share/fonts/PlayfairDisplay-Italic.ttf || true
+          echo "Downloading Plus Jakarta Sans (modern corporate subtitle font) from Google Fonts repository..."
+          curl -fL "https://github.com/google/fonts/raw/main/ofl/plusjakartasans/PlusJakartaSans%5Bwght%5D.ttf" \
+            -o ~/.local/share/fonts/PlusJakartaSans.ttf
+          if [ -f "assets/fonts/BebasNeue-Regular.ttf" ]; then
+            echo "Copying Bebas Neue from repository assets..."
+            cp assets/fonts/BebasNeue-Regular.ttf ~/.local/share/fonts/
+          else
+            echo "Downloading Bebas Neue from Google Fonts repository..."
+            curl -fL "https://github.com/google/fonts/raw/main/ofl/bebasneue/BebasNeue-Regular.ttf" \
+              -o ~/.local/share/fonts/BebasNeue-Regular.ttf
+          fi
+          fc-cache -fv ~/.local/share/fonts
+          echo "Installed fonts matching Bebas:"
+          fc-list : family | grep -i "Bebas" || echo "WARNING: Bebas Neue not found"
+
+      - name: Setup YouTube Cookies
+        env:
+          YT_COOKIES: ${{ secrets.YT_COOKIES }}
+        run: |
+          if [ -n "$YT_COOKIES" ]; then
+            echo "$YT_COOKIES" > cookies.txt
+            echo "Cookies file created successfully."
+          else
+            echo "No YT_COOKIES secret found. Proceeding without cookies."
+          fi
+
+      - name: Restore visual generation cache
+        uses: actions/cache@v4
+        with:
+          path: output/visual_cache
+          key: visual-cache-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            visual-cache-${{ runner.os }}-
+
+      - name: Restore Phase A state (produce mode)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.phase == 'produce'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh run download "${{ github.event.inputs.state_run_id }}" -n phase-a-state -D phase_a_restore
+          STATE_FILE=$(find phase_a_restore -name phase_a_state.json | head -1)
+          [ -n "$STATE_FILE" ] || (echo "phase_a_state.json not found in artifact" && exit 1)
+          RUN_DIR=$(dirname "$STATE_FILE")
+          mkdir -p output
+          cp -r "$RUN_DIR" output/
+          echo "PHASE_A_STATE_DIR=output" >> "$GITHUB_ENV"
+          echo "Restored Phase A state from run ${{ github.event.inputs.state_run_id }}: $RUN_DIR"
+
+      - name: Download scene image pack (produce mode)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.phase == 'produce'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p data/story_inbox
+          rm -f data/story_inbox/scene_*.png
+          if [ -n "${{ github.event.inputs.image_pack }}" ]; then
+            gh release download "${{ github.event.inputs.image_pack }}" -p "scenes.tar.gz" --clobber
+          else
+            curl -fL "${{ github.event.inputs.pack_url }}" -o scenes.tar.gz
+          fi
+          tar -xzf scenes.tar.gz -C data/story_inbox
+          ls -la data/story_inbox
+
+      - name: Run Pipeline (Manager Agent)
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          GEMINI_SCRIPT_API_KEY: ${{ secrets.GEMINI_SCRIPT_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMMA_FALLBACK_MODEL: ${{ secrets.GEMMA_FALLBACK_MODEL || 'gemma-3-27b-it' }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          FISH_AUDIO_API_KEY: ${{ secrets.FISH_AUDIO_API_KEY }}
+          FISH_AUDIO_VOICE_ID: ${{ secrets.FISH_AUDIO_VOICE_ID || 'd8a1340984ee4b63ad1ffae27a6a4339' }}
+          GCP_TTS_API_KEY: ${{ secrets.GCP_TTS_API_KEY }}
+          FISH_AUDIO_VOICE_ID_HER: ${{ secrets.FISH_AUDIO_VOICE_ID_HER || '933563129e564b19a115bedd57b7406a' }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM' }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          SERPAPI_KEY: ${{ secrets.SERPAPI_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          STORY_MODE: ${{ vars.STORY_MODE || 'true' }}
+          DIALOGUE_MODE: ${{ vars.DIALOGUE_MODE || 'true' }}
+          # IMAGES-PROVIDED MODE (owner instruction 2026-09-27, upgraded to PRIMARY PATH 2026-09-28
+          # verbatim: "Use your inbuilt image generation should be primary"; revert review after 2026-10-11):
+          # scheduled runs PREPARE only (no Gemini image calls ever); Instinct renders the scenes
+          # externally and dispatches phase=produce with pack_url/state_run_id to assemble+publish.
+          # story_image_agent.py fails closed without the inbox unless GEMINI_IMAGE_FALLBACK=true.
+          PIPELINE_PHASE: ${{ github.event.inputs.phase || (github.event_name == 'schedule' && 'prepare' || 'full') }}
+          PHASE_A_STATE_DIR: ${{ env.PHASE_A_STATE_DIR }}
+          STORY_IMAGES_INBOX: ${{ github.event.inputs.phase == 'produce' && 'data/story_inbox' || '' }}
+          GEMINI_IMAGE_API_KEY: ${{ secrets.GEMINI_IMAGE_API_KEY }}
+          YT_API_KEY: ${{ secrets.YT_API_KEY }}
+          ENABLE_YT_UPLOAD: ${{ github.event.inputs.skip_publish == 'true' && 'false' || (secrets.ENABLE_YT_UPLOAD || 'true') }}
+          ALLOW_PUBLICATION: ${{ github.event.inputs.skip_publish == 'true' && 'false' || (secrets.ALLOW_PUBLICATION || 'true') }}
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          ENABLE_TELEGRAM: ${{ secrets.ENABLE_TELEGRAM || 'true' }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ENABLE_INSTAGRAM: ${{ github.event.inputs.skip_publish == 'true' && 'false' || (secrets.ENABLE_INSTAGRAM || 'true') }}
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN || secrets.META_ACCESS_TOKEN }}
+          INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
+          INSTAGRAM_VIDEO_URL: ${{ secrets.INSTAGRAM_VIDEO_URL }}
+          FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
+          FACEBOOK_ACCESS_TOKEN: ${{ secrets.FACEBOOK_ACCESS_TOKEN || secrets.INSTAGRAM_ACCESS_TOKEN || secrets.META_ACCESS_TOKEN }}
+          ENABLE_FACEBOOK: ${{ github.event.inputs.skip_publish == 'true' && 'false' || (secrets.ENABLE_FACEBOOK || 'true') }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN || secrets.GH_TOKEN || github.token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN || secrets.GH_TOKEN || github.token }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          RUN_WITHOUT_JITTER: ${{ github.event_name == 'workflow_dispatch' && 'true' || 'false' }}
+        run: python -m src.agents.manager
+
+      - name: Upload Video Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: generated-shorts
+          path: output/**/distribution_ready.mp4
+          retention-days: 7
+
+      - name: Upload Phase A State Artifact (prepare mode)
+        uses: actions/upload-artifact@v4
+        if: (github.event_name == 'workflow_dispatch' && github.event.inputs.phase == 'prepare') || github.event_name == 'schedule'
+        with:
+          name: phase-a-state
+          path: |
+            output/**
+            !output/visual_cache/**
+          retention-days: 2
+
+      - name: Upload Phase A manifest (prepare mode)
+        uses: actions/upload-artifact@v4
+        if: (github.event_name == 'workflow_dispatch' && github.event.inputs.phase == 'prepare') || github.event_name == 'schedule'
+        with:
+          name: phase-a-manifest
+          path: output/**/phase_a_state.json
+          retention-days: 2
+
+      - name: Upload Tamil master visual package
+        uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: market-debunk-master-package
+          path: output/**/master_visual_package/**
+          retention-days: 7
+
+      - name: Commit Deduplication & Analytics Data
+        if: success()
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          for f in data/used_topics.json data/used_questions.json data/channel_ids.json data/used_broll.json data/publish_ledger.json data/analytics_ledger.json data/deprecated_patterns.json data/tuning_playbook.json data/strategic_brief.json data/topic_queue.json; do
+            [ -f "$f" ] && git add "$f"
+          done
+          # Only commit if there are changes
+          git diff --quiet && git diff --staged --quiet || (git commit -m "chore: update topic, analytics, tuning playbook, and dedup history [skip ci]" && (git pull origin master --rebase --autostash -X ours || true) && git push origin master)
+
+      
