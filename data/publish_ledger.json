@@ -1372,7 +1372,7 @@
       "facebook": "2008120706566762"
     },
     "audited": false,
-    "audit_attempts": 1
+    "audit_attempts": 2
   },
   {
     "timestamp": "2026-09-26T17:07:19.872090+00:00",
@@ -1567,6 +1567,34 @@
       "youtube": null,
       "instagram": null,
       "facebook": "1669758644573743"
+    },
+    "audited": false
+  },
+  {
+    "timestamp": "2026-09-28T02:53:07.120825+00:00",
+    "title": "Rights Issue Trap: The 0% Gain Reality #Shorts",
+    "topic": "A Rights Issue is not a discounted loyalty reward from management, but a corporate shakedown forcing you to inject fresh cash or suffer silent equity dilution.",
+    "hook": "⚠️ Is your stock’s \"discounted\" rights issue actually a hidden wealth trap",
+    "hashtags": [
+      "#WealthCreationIndia",
+      "#SIPInvesting",
+      "#MarketDebunk",
+      "#MultibaggerStocks",
+      "#MidCapStocks",
+      "#IndianStockMarket",
+      "#NiftyAlert",
+      "#NSEIndia"
+    ],
+    "duration_seconds": 81.05796000000001,
+    "urls": {
+      "youtube": "https://www.youtube.com/shorts/UWq-Ny-xYNs",
+      "instagram": "https://www.instagram.com/reel/Dd0J4vDCjSn/",
+      "facebook": "https://www.facebook.com/reel/1093236616928394/"
+    },
+    "ids": {
+      "youtube": "UWq-Ny-xYNs",
+      "instagram": "18149174035553127",
+      "facebook": "1093236616928394"
     },
     "audited": false
   }
