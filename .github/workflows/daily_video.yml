@@ -15,10 +15,12 @@ on:
     inputs:
       skip_publish:
         description: 'Generate the video but do not publish anywhere (test mode)'
-      revoice:
-        description: '(produce) Re-synthesize voice with current cast config instead of reusing Phase A audio'
         required: false
         default: 'false'
+        type: choice
+        options: ['false', 'true']
+      revoice:
+        description: '(produce) Re-synthesize voice with current cast config instead of reusing Phase A audio'
         required: false
         default: 'false'
         type: choice
