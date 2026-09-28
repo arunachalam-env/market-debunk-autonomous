@@ -284,6 +284,7 @@ def synthesize_scene(
     narration: str,
     audio_dir: Path,
     voice_name: str = DEFAULT_VOICE,
+    speaker: str = "",
 ) -> dict:
     """Synthesize a single scene's narration using Fish Audio S2.1 Pro with ElevenLabs and Edge TTS fallbacks."""
     audio_dir.mkdir(parents=True, exist_ok=True)
@@ -294,6 +295,10 @@ def synthesize_scene(
 
     api_key = getattr(settings, "FISH_AUDIO_API_KEY", "") or os.environ.get("FISH_AUDIO_API_KEY", "")
     voice_id = getattr(settings, "FISH_AUDIO_VOICE_ID", "") or os.environ.get("FISH_AUDIO_VOICE_ID", "d4db1b7753414bd29b8c7ef60e794a44")
+    # Dialogue mode (owner-locked 2026-09-28): per-scene speaker -> voice routing.
+    # ARUN keeps the owner's English clone; HER gets the dedicated female voice (julia).
+    if (speaker or "").strip().upper() == "HER":
+        voice_id = getattr(settings, "FISH_AUDIO_VOICE_ID_HER", "") or os.environ.get("FISH_AUDIO_VOICE_ID_HER", "eb81775a43bc469dafda02de59d13cb7")
     model_str = getattr(settings, "FISH_AUDIO_MODEL", "s2.1-pro-free")
     eleven_key = getattr(settings, "ELEVENLABS_API_KEY", "") or os.environ.get("ELEVENLABS_API_KEY", "")
     eleven_voice = getattr(settings, "ELEVENLABS_VOICE_ID", "21m00Tcm4TlvDq8ikWAM")
@@ -360,7 +365,7 @@ def synthesize_all_scenes(scenes: list[dict], audio_dir: Path, voice: str = DEFA
         narration = scene["narration"]
 
         try:
-            result = synthesize_scene(sid, narration, audio_dir, voice)
+            result = synthesize_scene(sid, narration, audio_dir, voice, speaker=scene.get("speaker", ""))
             results.append(result)
             log.info(
                 "✓ Scene %d synthesized | duration: %.1fs | words: %d",
