@@ -4,7 +4,7 @@
 
 **Look:** Muted hand-painted storybook illustration (graphic-novel watercolor)
 **Status:** LOCKED
-**Date:** 2026-09-27
+**Date:** 2026-09-27 (world modernized 2026-09-28)
 **Supersedes:** the old photoreal "Arjun (Look F)" document. The channel is now an
 illustrated story channel: one recurring character, one consistent world, one
 finance concept per episode, told as a story.
@@ -17,10 +17,10 @@ finance concept per episode, told as a story.
 |---|---|
 | Name | Arun |
 | Age | 24 |
-| City | Chennai |
+| City | A modern Indian city (neutral, no regional markers on screen) |
 | Role | Protagonist of every episode. He does not teach; he LIVES the money mistake so the viewer doesn't have to. |
 | Energy | Earnest, a little naive at the start, sharper by the end. |
-| World | Modest Chennai apartment: small wooden desk, laptop, steel filter-coffee tumbler, window with dusk rooftops and a distant temple gopuram. |
+| World | Modern city apartment: office desk, laptop, steel tumbler, window with a modern city skyline. Neutral professional feel. No religious or regional props (owner mandate 2026-09-28: "keep it professional"). |
 
 ## Arun - body lock (paste into every image prompt or use the reference sheet)
 
@@ -42,19 +42,19 @@ with every scene so Arun looks like Arun across all episodes.
 ## Recurring props (the world's continuity)
 
 - The goals notebook on his desk (each episode's mistake shows in his handwriting)
-- The steel filter-coffee tumbler
-- The dusk Chennai skyline with the temple gopuram
+- The steel tumbler (his personal prop - stays)
+- The modern city skyline through his window (no temple, no regional props)
 - His phone (where the money moves happen)
 
 # THE EPISODE FORMULA (7 beats)
 
-1. Cold-open paradox with exact numbers, stated as fact (never a question, never a warning)
+1. Cold-open hook in the first 3 seconds: paradox-number OR wrong-guess flip (everyone believes X, then the flip), exact numbers, stated as fact (never a question, never a warning)
 2. "Meet Arun" - his job, his goal
 3. The money chain, step by step, exact figures at every beat
 4. The cost lands on Arun, specifically
 5. "In economics, this is called X" - the viewer leaves owning a term
 6. "You see this today in..." - the real named company/product
-7. "So, what did we learn?" - exactly 3 short takeaways. No CTA. End clean.
+7. The landing: ONE flat takeaway sentence, then one short CTA line woven into the story voice (sounds like the story's last line, never an announcer).
 
 # STYLE RULES
 
