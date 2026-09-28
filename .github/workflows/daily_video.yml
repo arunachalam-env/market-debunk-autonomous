@@ -1,16 +1,6 @@
 name: Daily Autonomous Video Pipeline (1 Fact-Checked Video Daily - 09:30 AM IST)
 
 on:
-  schedule:
-    # 1 Daily Video Slot: one fact-checked Short beats two unchecked ones.
-    # The morning slot is kept because it maps to the MARKET_INVESTING domain
-    # (named investors / specific stocks - the channel's proven format).
-    # 3x redundant off-peak ticks protect against GitHub Actions queue drops;
-    # the 3h publish cooldown in the pipeline prevents any double-post.
-    # Slot 1 (Morning ~09:17 - 09:53 AM IST):
-    - cron: '47 3 * * *'  # 09:17 AM IST (Primary)
-    - cron: '07 4 * * *'  # 09:37 AM IST (Fallback 1)
-    - cron: '23 4 * * *'  # 09:53 AM IST (Fallback 2)
   workflow_dispatch: # Allow manual trigger from GitHub UI
     inputs:
       skip_publish:
