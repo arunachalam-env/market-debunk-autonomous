@@ -15,6 +15,10 @@ on:
     inputs:
       skip_publish:
         description: 'Generate the video but do not publish anywhere (test mode)'
+      revoice:
+        description: '(produce) Re-synthesize voice with current cast config instead of reusing Phase A audio'
+        required: false
+        default: 'false'
         required: false
         default: 'false'
         type: choice
@@ -148,7 +152,9 @@ jobs:
           GEMMA_FALLBACK_MODEL: ${{ secrets.GEMMA_FALLBACK_MODEL || 'gemma-3-27b-it' }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           FISH_AUDIO_API_KEY: ${{ secrets.FISH_AUDIO_API_KEY }}
-          FISH_AUDIO_VOICE_ID: ${{ secrets.FISH_AUDIO_VOICE_ID || 'd4db1b7753414bd29b8c7ef60e794a44' }}
+          FISH_AUDIO_VOICE_ID: ${{ secrets.FISH_AUDIO_VOICE_ID || 'd8a1340984ee4b63ad1ffae27a6a4339' }}
+          GCP_TTS_API_KEY: ${{ secrets.GCP_TTS_API_KEY }}
+          FISH_AUDIO_VOICE_ID_HER: ${{ secrets.FISH_AUDIO_VOICE_ID_HER || '933563129e564b19a115bedd57b7406a' }}
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM' }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
@@ -162,6 +168,7 @@ jobs:
           # externally and dispatches phase=produce with pack_url/state_run_id to assemble+publish.
           # story_image_agent.py fails closed without the inbox unless GEMINI_IMAGE_FALLBACK=true.
           PIPELINE_PHASE: ${{ github.event.inputs.phase || (github.event_name == 'schedule' && 'prepare' || 'full') }}
+          REVOICE: ${{ github.event.inputs.revoice || 'false' }}
           PHASE_A_STATE_DIR: ${{ env.PHASE_A_STATE_DIR }}
           STORY_IMAGES_INBOX: ${{ github.event.inputs.phase == 'produce' && 'data/story_inbox' || '' }}
           GEMINI_IMAGE_API_KEY: ${{ secrets.GEMINI_IMAGE_API_KEY }}
