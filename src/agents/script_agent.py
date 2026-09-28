@@ -257,12 +257,13 @@ THE 7-BEAT FORMULA (map beats across 7-9 scenes, one visual per scene):
 6. BRIDGE TO TODAY (scene ~8): "You see this today in..." - name the REAL Indian company,
    product, bank, or scheme from the sourced story. Named entities only, never "some banks".
 7. "SO, WHAT DID WE LEARN?" (final scenes): exactly 3 ultra-short takeaways, each a complete
-   sentence under 8 words. Then END CTA (owner mandate 2026-09-28): one or two short spoken lines, max 20 words
-   total, creator-style and warm. The mechanic is fixed: ask viewers to FOLLOW AND
-   SUBSCRIBE, COMMENT "GUIDE", and SHARE the reel to get the free guide.
-   Style: "Follow and subscribe, comment GUIDE, share this reel - the free guide is yours."
-   The CTA is spoken inside the final scene (its subtitle shows it on screen).
+   sentence under 8 words. Then END CTA (owner mandate 2026-09-27): exactly one short spoken
+   call-to-action line, max 12 words, creator-style and warm - invite the viewer to follow
+   Market Debunk and say what they get. Style: "Follow Market Debunk - one money story every
+   morning." The CTA is spoken inside the final scene (its subtitle shows it on screen).
    No "smash that button", no "link in bio", no begging.
+   (TIMING GUARD: the follow + subscribe + comment "GUIDE" + share mechanic stays OFF until
+   the owner approves the actual guide. Hot-swap this block only after approval.)
 
 CHARACTER VOICE:
 - Third-person narrator telling Arun's story warmly, like a friend recounting what happened.
@@ -317,7 +318,7 @@ OUTPUT FORMAT - Return ONLY valid JSON, nothing else, no markdown fences:
 }
 
 CRITICAL: 7-9 scenes. 150-200 total narration words including the end CTA (60-85 seconds, hard max 90).
-One continuous spoken story, never a list. End on the 3 takeaways, then the CTA (follow + subscribe, comment "GUIDE", share for the guide).
+One continuous spoken story, never a list. End on the 3 takeaways, then the single CTA line.
 """
 
 _SYSTEM_PROMPT = """You are the lead viral scriptwriter and creative director for "Market Debunk".
