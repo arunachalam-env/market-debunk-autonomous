@@ -16,6 +16,11 @@ def _story_mode() -> bool:
     """Story Mode: 75-120s illustrated Arun stories instead of 24s Shorts."""
     return bool(getattr(settings, "STORY_MODE", False))
 
+
+def _dialogue_mode() -> bool:
+    """4pm two-character dialogue format: she asks, Arun answers (roles owner-locked 2026-09-28)."""
+    return bool(getattr(settings, "DIALOGUE_MODE", False))
+
 # ──────────────────────────────────────────────────────────────────────────────
 #  Pydantic Schema
 # ──────────────────────────────────────────────────────────────────────────────
@@ -26,13 +31,14 @@ class ScenePayload(BaseModel):
     visual_prompt: str = Field(description="Action/pose/lighting description for the image generator.")
     broll_keyword: str = Field(default="", description="2-3 English words for vertical stock footage search (e.g. 'credit card payment', 'stock market crash', 'counting money').")
     duration_hint: float = Field(default=5.0)
+    speaker: str = Field(default="", description='Dialogue mode only: "ARUN" (expert, answers) or "HER" (curious friend, asks). Empty in solo story mode.')
 
     @field_validator("narration")
     @classmethod
     def validate_narration(cls, value: str) -> str:
         cleaned = " ".join(value.split())
         word_count = len(cleaned.split())
-        lo, hi = (3, 45) if _story_mode() else (4, 26)
+        lo, hi = (3, 45) if (_story_mode() or _dialogue_mode()) else (4, 26)
         if not lo <= word_count <= hi:
             raise ValueError(f"Each scene narration must be {lo}-{hi} words; got {word_count}.")
         banned = [
@@ -101,16 +107,17 @@ class ScriptPayload(BaseModel):
     @field_validator("scenes")
     @classmethod
     def check_scenes(cls, v):
-        lo, hi = (7, 10) if _story_mode() else (6, 9)
+        lo, hi = (10, 12) if (_story_mode() or _dialogue_mode()) else (6, 9)
         if not (lo <= len(v) <= hi):
             raise ValueError(f"Script must have {lo}-{hi} scenes, got {len(v)}")
         scene_ids = [scene.scene_id for scene in v]
         expected_ids = list(range(1, len(v) + 1))
         if scene_ids != expected_ids:
             raise ValueError(f"Scene IDs must be exactly 1 through {len(v)} in order; got {scene_ids}.")
-        for scene in v[1:-1]:
-            if "priya" in scene.visual_prompt.lower():
-                raise ValueError(f"Scene {scene.scene_id} mentions Priya. Priya is removed; use contextual B-roll objects.")
+        if _story_mode() and not _dialogue_mode():
+            for scene in v[1:-1]:
+                if "priya" in scene.visual_prompt.lower():
+                    raise ValueError(f"Scene {scene.scene_id} mentions Priya. Priya is removed; use contextual B-roll objects.")
         return v
 
     @model_validator(mode="after")
@@ -119,8 +126,8 @@ class ScriptPayload(BaseModel):
         Guarantees that final scene voiceover contains a rapid retention CTA.
         Accepts fast 2-3 word subliminal sign-offs to maintain pacing.
         """
-        if _story_mode():
-            # Story Mode ends on the 3 takeaways; no spoken CTA is appended.
+        if _story_mode() or _dialogue_mode():
+            # Story/Dialogue modes land on a flat takeaway + woven CTA inside the script itself.
             return self
         last_scene = self.scenes[-1]
         narration = last_scene.narration.strip()
@@ -329,6 +336,86 @@ Each scene carries 5-8 seconds of narration. One continuous spoken story, never 
 End on the single flat takeaway line, then the CTA line woven into the story voice.
 """
 
+
+_DIALOGUE_SYSTEM_PROMPT = """You are the head storyteller for "Market Debunk" - the 4PM TWO-CHARACTER DIALOGUE edition.
+
+Every video is a 60-85 second illustrated story (HARD MAX 90 seconds - the owner caps every video
+at 90s, 2026-09-27) told as a DIALOGUE between two recurring illustrated characters in the same
+modern-city apartment world. One real finance/economics concept per episode.
+
+THE CAST (roles owner-locked 2026-09-28 for the 14-day sprint - never alternate who asks):
+- ARUN: young Indian man, 24, olive-green hoodie. The EXPERT. He answers, explains, names the
+  concept, lands the takeaway. Every 4pm video builds HIS authority.
+- {HER_NAME}: young Indian woman, 25, chin-length dark bob haircut, teal denim jacket, small
+  nose stud (locked character sheet, face option C). The CURIOUS FRIEND - she asks
+  exactly the question the viewer is thinking. The viewer sees themselves in HER. She is not dumb;
+  she is curious and occasionally lands the wrong guess everyone believes.
+
+THE DIALOGUE FORMULA (10-12 scenes, one visual per scene, each scene 5-8 seconds of speech):
+1. COLD-OPEN HOOK (scene 1, 0-3s): ARUN or {HER_NAME} opens with a paradox-number stated as fact
+   carrying exact figures from the sourced story. The surprise lands inside 3 seconds, first
+   sentence 12 words or fewer, no greeting, no warm-up.
+2. THE WRONG GUESS (scene 1-2): {HER_NAME} says the obvious-but-wrong interpretation everyone
+   believes ("So he basically robbed the bank?") - ARUN corrects it in one line.
+3. HER REAL QUESTION (scene 2-3): the question the viewer actually has, in plain words.
+4. THE MONEY CHAIN (scenes 3-6): ARUN answers step by step with the EXACT rupee amounts, rates
+   and dates from the sourced story. {HER_NAME} interjects short reactions ("Wait, that's legal?")
+   that keep it a conversation, never a lecture. Max 1 interjection per 2 Arun lines.
+5. THE COST LANDS (scenes 6-8): who pays, specifically and emotionally.
+6. NAME THE CONCEPT (scene ~9): ARUN: "In economics, this is called X." X must be a REAL,
+   established, fact-checkable term. If no real term fits cleanly, describe the mechanism in
+   plain words instead - never coin one.
+7. BRIDGE TO TODAY (scene ~10): the REAL named Indian company/product from the sourced story.
+8. THE LANDING (final 1-2 scenes): ARUN states ONE flat takeaway sentence (max 12 words), then
+   exactly one short CTA line (max 12 words) WOVEN into the conversation voice - it must read
+   like the natural last line of the chat, never an announcer. Style: ARUN: "Follow Market
+   Debunk - {HER_NAME} asks, I answer, you keep your money."
+   (TIMING GUARD: the comment-"GUIDE" mechanic stays OFF until the owner approves the guide.)
+
+VOICE RULES:
+- Every scene's "speaker" field is exactly "ARUN" or "HER".
+- Each scene narration is ONE speaker's line(s): 3-45 words. Her questions stay under 15 words.
+- Dialogue reads like two friends talking - interruptions, fragments, genuine reactions.
+- BANNED words: trap, exposed, scam, shocking, "silent killer", "did you know", "in this video".
+- Concrete over abstract: "Rs 8,340 a month", never "a large sum".
+
+ACCURACY & FORMAT MANDATE (NON-NEGOTIABLE):
+- Every number, date, regulation, and company/investor fact must be REAL and verifiable. A
+  fact-check gate blocks publishing on any refuted or unverifiable claim.
+- TRACEABILITY RULE: a specific number, percentage, or rupee amount may appear ONLY if present
+  in this video's thesis, story seed, or supplied source material. No figures from general
+  knowledge, estimates, or unnamed "reports/studies/experts". Character dialogue, reactions and
+  emotions stay fictional; the facts underneath never do.
+- All visuals are AI-generated storybook illustrations of the two characters' world. Never
+  write visual prompts requiring real footage, real people, brands, or logos.
+
+VISUAL PROMPT GUIDELINES:
+- Every visual_prompt describes ONE illustrated story beat in the modern apartment world
+  (office desk, steel tumbler, laptop, modern city skyline - no religious or regional props).
+- Name who is in frame and doing what: ARUN (olive hoodie) and/or {HER_NAME}. Keep both on-model.
+- No text/words/letters inside images. Emotion through posture and light, not labels.
+
+OUTPUT FORMAT - Return ONLY valid JSON, nothing else, no markdown fences:
+{
+  "title": "Curiosity story title, max 55 chars, no fear words, no #Shorts",
+  "description": "150-300 chars. Formal definition of the concept: 'In economics, [concept] is...'",
+  "hashtags": ["MarketDebunk", "MoneyStories", "PersonalFinance", "InvestingIndia", "FinanceShorts"],
+  "scenes": [
+    {
+      "scene_id": 1,
+      "speaker": "HER",
+      "narration": "He turned fifty thousand into fifty million on a dying stock?",
+      "visual_prompt": "{HER_NAME} leaning forward at the office desk, eyebrows up, phone in hand, modern city skyline at dusk behind her",
+      "broll_keyword": "stock trading phone",
+      "duration_hint": 5.0
+    }
+  ]
+}
+
+CRITICAL: 10-12 scenes. 150-200 total narration words including the end CTA (60-85 seconds, hard max 90).
+One continuous conversation, never a list. End on ARUN's flat takeaway, then the woven CTA line.
+"""
+
 _SYSTEM_PROMPT = """You are the lead viral scriptwriter and creative director for "Market Debunk".
 You write explosive, scroll-stopping, high-retention English financial short-form scripts (YouTube Shorts, Instagram Reels, TikTok).
 
@@ -512,7 +599,11 @@ def _get_api_clients():
 
 def _get_system_prompt_with_negative_guidance() -> str:
     """Dynamically append deprecated patterns from the 48h analytics sensor to system prompt."""
-    prompt = _STORY_SYSTEM_PROMPT if _story_mode() else _SYSTEM_PROMPT
+    if _dialogue_mode():
+        her = getattr(settings, "HER_NAME", "She") or "She"
+        prompt = _DIALOGUE_SYSTEM_PROMPT.replace("{HER_NAME}", her)
+    else:
+        prompt = _STORY_SYSTEM_PROMPT if _story_mode() else _SYSTEM_PROMPT
     try:
         from src.analytics.analytics_sensor import AnalyticsSensor
         deprecated = AnalyticsSensor().load_deprecated_patterns()
@@ -665,7 +756,10 @@ def generate_script(
     question_hook: Pre-crafted specific question from QuestionCraftingAgent. If provided,
                    injected as mandatory Scene 1 narration seed into the LLM prompt.
     """
-    if _story_mode():
+    if _dialogue_mode():
+        target_scenes = 11
+        log.info("Generating 4pm two-character dialogue script (%d scenes, 60-85s) | thesis: '%s'", target_scenes, thesis)
+    elif _story_mode():
         target_scenes = 11
         log.info("Generating Arun story script (%d scenes, 60-85s) | thesis: '%s'", target_scenes, thesis)
     else:
@@ -726,7 +820,23 @@ Safe Visual Evidence Object: {story_seed.get('visual_evidence', '')}
             "verbatim in the thesis/story seed above.\n"
         )
 
-    if _story_mode():
+    if _dialogue_mode():
+        her = getattr(settings, "HER_NAME", "She") or "She"
+        user_prompt = f"""Core financial thesis: "{thesis}"
+{seed_context}{forbidden_block}
+Now generate the complete {target_scenes}-scene TWO-CHARACTER dialogue script (60-85 seconds, 150-200 words total, hard max 90) as JSON.
+Remember: exactly {target_scenes} scenes, every scene has speaker "ARUN" or "HER".
+
+Before answering, internally check that:
+- the title is a curiosity story title (max 55 chars), no fear words, no #Shorts;
+- scene 1 lands the paradox-number surprise inside 3 seconds (12 words or fewer);
+- {her} asks the wrong-guess and the viewer's real question; ARUN answers and stays the expert;
+- roles never alternate: she asks, he answers;
+- every specific number, percentage, or rupee amount appears in the thesis/story seed above - anything unsourced is rephrased qualitatively, never fabricated;
+- ARUN names the concept plainly ("In economics, this is called X") and bridges to the REAL named company/product from the sourced story;
+- the final scene lands ARUN's ONE flat takeaway sentence (max 12 words), then one CTA line woven into the conversation voice;
+- every visual_prompt is one illustrated story beat in the modern apartment world (office desk, steel tumbler, modern city skyline, no religious or regional props), no text/words inside images, each prompt unique."""
+    elif _story_mode():
         user_prompt = f"""Core financial thesis: "{thesis}"
 {seed_context}{forbidden_block}
 Now generate the complete {target_scenes}-scene Arun story script (60-85 seconds, 150-200 words total, hard max 90) as JSON.
