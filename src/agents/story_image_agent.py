@@ -40,8 +40,9 @@ STYLE_TAG = (
 CHARACTER_BIBLE = (
     "The recurring character is Arun: a young Indian man, 24, wheatish skin, "
     "dark slightly-messy wavy hair, warm brown eyes, light stubble, wearing a casual "
-    "olive-green hoodie. He lives in a modest Chennai apartment with a small wooden desk, "
-    "a laptop, a steel filter-coffee tumbler, and a window showing dusk city rooftops."
+    "olive-green hoodie. He lives in a modern city apartment with an office desk, "
+    "a laptop, a steel tumbler, and a window showing a modern city skyline. No "
+    "religious or regional props - neutral professional feel."
 )
 
 NEGATIVE = (
