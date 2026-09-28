@@ -105,10 +105,13 @@ class Settings:
     # Primary: Fish Audio S2.1 Pro with custom human cloned voice
     TTS_PROVIDER: str = _get("TTS_PROVIDER", default="fish_audio") or "fish_audio"
     FISH_AUDIO_API_KEY: str = _get("FISH_AUDIO_API_KEY", default="") or ""
-    FISH_AUDIO_VOICE_ID: str = _get("FISH_AUDIO_VOICE_ID", default="d8a1340984ee4b63ad1ffae27a6a4339") or "d8a1340984ee4b63ad1ffae27a6a4339"  # Arun = Fish "ELITE" for English AND Tamil, owner ear-picked 2026-09-28; duo + morning solo. Tamil TTS input is ALWAYS romanized Tanglish (English letters), never native Tamil script (owner rule 7:42am)
+    FISH_AUDIO_VOICE_ID: str = _get("FISH_AUDIO_VOICE_ID", default="d8a1340984ee4b63ad1ffae27a6a4339") or "d8a1340984ee4b63ad1ffae27a6a4339"  # Arun = Fish "ELITE" for English AND Tamil, owner ear-picked 2026-09-28; duo + morning solo. Tamil via Fish = romanized Tanglish ONLY (owner rule 7:42am); Tamil via Google Chirp3-HD = native Tamil script (owner 7:50am)
     FISH_AUDIO_VOICE_ID_HER: str = _get("FISH_AUDIO_VOICE_ID_HER", default="933563129e564b19a115bedd57b7406a") or "933563129e564b19a115bedd57b7406a"  # Liya = Fish "Sarah", owner ear-picked 2026-09-28
     FISH_AUDIO_SPEED_HER: str = _get("FISH_AUDIO_SPEED_HER", default="1.2") or "1.2"  # Sarah at 1.2x, owner ear-picked ("quite slow" at 1.0x)
-    FISH_AUDIO_VOLUME_HER: str = _get("FISH_AUDIO_VOLUME_HER", default="3.0") or "3.0"  # dB boost; owner 7:43am "increase the volume" - also duck BGM lower under her lines in the mix
+    FISH_AUDIO_VOLUME_HER: str = _get("FISH_AUDIO_VOLUME_HER", default="3.0") or "3.0"
+    GCP_TTS_API_KEY: str = _get("GCP_TTS_API_KEY", default="") or ""  # Google Cloud TTS API key (repo secret), restricted to Cloud Text-to-Speech only; trial credit window to ~2026-10-07 (owner-approved 7:52am "excuse it for 10 days")
+    GCP_TTS_VOICE_ARUN_TA: str = _get("GCP_TTS_VOICE_ARUN_TA", default="ta-IN-Chirp3-HD-Charon") or "ta-IN-Chirp3-HD-Charon"  # Arun Tamil, owner ear-picked 7:53am
+    GCP_TTS_VOICE_HER_TA: str = _get("GCP_TTS_VOICE_HER_TA", default="ta-IN-Chirp3-HD-Aoede") or "ta-IN-Chirp3-HD-Aoede"  # Liya Tamil, owner ear-picked 7:52am  # dB boost; owner 7:43am "increase the volume" - also duck BGM lower under her lines in the mix
     FISH_AUDIO_MODEL: str = _get("FISH_AUDIO_MODEL", default="s2.1-pro-free") or "s2.1-pro-free"
     
     # Secondary Fallback: ElevenLabs TTS
