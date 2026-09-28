@@ -347,7 +347,8 @@ THE CAST (roles owner-locked 2026-09-28 for the 14-day sprint - never alternate 
 - ARUN: young Indian man, 24, olive-green hoodie. The EXPERT. He answers, explains, names the
   concept, lands the takeaway. Every 4pm video builds HIS authority.
 - {HER_NAME}: young Indian woman, 25, chin-length dark bob haircut, teal denim jacket, small
-  nose stud (locked character sheet, face option C). The CURIOUS FRIEND - she asks
+  nose stud, CUTE look owner-locked 2026-09-28: soft rounder cheeks, warm eyes, bright friendly
+  smile (locked character sheet, face option C, cuter pass approved by owner 6:57am). The CURIOUS FRIEND - she asks
   exactly the question the viewer is thinking. The viewer sees themselves in HER. She is not dumb;
   she is curious and occasionally lands the wrong guess everyone believes.
 
@@ -355,8 +356,10 @@ THE DIALOGUE FORMULA (10-12 scenes, one visual per scene, each scene 5-8 seconds
 1. COLD-OPEN HOOK (scene 1, 0-3s): ARUN or {HER_NAME} opens with a paradox-number stated as fact
    carrying exact figures from the sourced story. The surprise lands inside 3 seconds, first
    sentence 12 words or fewer, no greeting, no warm-up.
-2. THE WRONG GUESS (scene 1-2): {HER_NAME} says the obvious-but-wrong interpretation everyone
-   believes ("So he basically robbed the bank?") - ARUN corrects it in one line.
+2. THE WRONG GUESS, SATIRICAL (scene 1-2): {HER_NAME} opens with the obvious-but-wrong
+   interpretation everyone believes, played COMPLETELY SATIRICAL (owner rule 2026-09-28): she
+   MOCKS the myth while asking it - eye-roll energy, "So apparently...", clearly not buying it.
+   ARUN corrects it in one line. Her opener is never a sincere question.
 3. HER REAL QUESTION (scene 2-3): the question the viewer actually has, in plain words.
 4. THE MONEY CHAIN (scenes 3-6): ARUN answers step by step with the EXACT rupee amounts, rates
    and dates from the sourced story. {HER_NAME} interjects short reactions ("Wait, that's legal?")
@@ -378,6 +381,15 @@ VOICE RULES:
 - Dialogue reads like two friends talking - interruptions, fragments, genuine reactions.
 - BANNED words: trap, exposed, scam, shocking, "silent killer", "did you know", "in this video".
 - Concrete over abstract: "Rs 8,340 a month", never "a large sum".
+
+VISUAL RULES (owner-locked 2026-09-28):
+- SHOT/REVERSE-SHOT is the default: every scene image shows ONE character - the speaker. Cut
+  to whoever speaks. A shared two-character frame is allowed only as a rare establishing shot
+  (max 1 per video) and only when both faces verify clean against the sheets.
+- POSE VARIETY per scene: vary gestures and posture (pointing, arms crossed, leaning forward,
+  holding the steel tumbler, writing in the notebook, open shrug). Hand-to-face (chin/cheek
+  rest) is allowed only OCCASIONALLY and never twice in a row.
+- Every scene's image_prompt must name the speaker, the pose, and the expression explicitly.
 
 ACCURACY & FORMAT MANDATE (NON-NEGOTIABLE):
 - Every number, date, regulation, and company/investor fact must be REAL and verifiable. A
