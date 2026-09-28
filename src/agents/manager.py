@@ -117,6 +117,13 @@ def run_pipeline():
             strategic_brief = SimpleNamespace(**state["strategic_brief"]) if state.get("strategic_brief") else None
             director = None  # post-publish engagement step skipped in produce mode
             log.info("Produce mode: restored Phase A state for run %s (%d scenes)", state.get("run_id"), len(script_dict.get("scenes", [])))
+            if (os.environ.get("REVOICE", "") or "").strip().lower() == "true":
+                # Re-voice an already-prepared run with the CURRENT cast config (owner request
+                # 2026-09-28: replace the old-default voice with the locked cast). Re-synthesizes
+                # every scene through voice_agent; assembly then proceeds with fresh audio+timings.
+                log.info("REVOICE=true: re-synthesizing %d scenes with current cast config...", len(script_dict.get("scenes", [])))
+                voice_results = voice_agent.synthesize_all_scenes(script_dict["scenes"], audio_dir)
+                stats["total_duration"] = sum(r["duration"] for r in voice_results)
         else:
 
             # ââ Phase 1: Topic Discovery (Battle-Tested Real-World Sourcing) ââ
