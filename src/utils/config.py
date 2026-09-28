@@ -85,9 +85,13 @@ class Settings:
     VIDEO_FPS: int = int(_get("VIDEO_FPS", default="30"))
     VIDEO_DURATION_TARGET: int = int(_get("VIDEO_DURATION_TARGET", default="80"))
     # -- Story Mode (Arun storybook format) ----------------------------------
-    # When enabled, the pipeline produces 75-120s illustrated story videos
-    # (10-14 scenes) instead of 24s stock-footage Shorts.
+    # When enabled, the pipeline produces 60-85s illustrated story videos
+    # (10-12 scenes, hard max 90s) instead of 24s stock-footage Shorts.
     STORY_MODE: bool = (_get("STORY_MODE", default="true") or "true").lower() == "true"
+    # Two-character 4pm dialogue format (owner-locked roles 2026-09-28, 14-day sprint):
+    # she asks (curious friend, viewer's voice), Arun answers (expert). Off until name/voice picks land.
+    DIALOGUE_MODE: bool = (_get("DIALOGUE_MODE", default="false") or "false").lower() == "true"
+    HER_NAME: str = _get("HER_NAME", default="Liya")  # owner-locked 2026-09-28: Liya, face option C
     STORY_IMAGE_MODEL: str = _get("STORY_IMAGE_MODEL", default="gemini-2.5-flash-image") or "gemini-2.5-flash-image"
     MIN_VIDEO_DURATION: float = float(_get("MIN_VIDEO_DURATION", default=("45.0" if STORY_MODE else "15.0")))
     MAX_VIDEO_DURATION: float = float(_get("MAX_VIDEO_DURATION", default=("93.0" if STORY_MODE else "45.0")))
