@@ -186,6 +186,8 @@ def _synthesize_fish_audio(
     voice_id: str,
     api_key: str,
     model_string: str = "s2.1-pro-free",
+    speed: float = 1.12,
+    volume: float = 0.0,
 ) -> bool:
     """Call Fish Audio S2.1 Pro API with exponential backoff on HTTP 429."""
     import requests
@@ -214,8 +216,8 @@ def _synthesize_fish_audio(
         "top_p": 0.85,
         "chunk_length": 200,
         "prosody": {
-            "speed": 1.12,
-            "volume": 0.0
+            "speed": speed,
+            "volume": volume
         }
     }
 
@@ -296,9 +298,17 @@ def synthesize_scene(
     api_key = getattr(settings, "FISH_AUDIO_API_KEY", "") or os.environ.get("FISH_AUDIO_API_KEY", "")
     voice_id = getattr(settings, "FISH_AUDIO_VOICE_ID", "") or os.environ.get("FISH_AUDIO_VOICE_ID", "d8a1340984ee4b63ad1ffae27a6a4339")
     # Dialogue mode (owner-locked 2026-09-28): per-scene speaker -> voice routing.
-    # ARUN keeps the owner's English clone; HER gets the dedicated female voice (julia).
+    # ARUN = Fish "ELITE" (English AND Tamil; Tamil input is romanized Tanglish only).
+    # HER = Fish "Sarah" at 1.2x with a +3dB boost (owner ear-picked 2026-09-28 7:41-7:43am).
+    speed = 1.12
+    volume = 0.0
     if (speaker or "").strip().upper() == "HER":
-        voice_id = getattr(settings, "FISH_AUDIO_VOICE_ID_HER", "") or os.environ.get("FISH_AUDIO_VOICE_ID_HER", "eb81775a43bc469dafda02de59d13cb7")
+        voice_id = getattr(settings, "FISH_AUDIO_VOICE_ID_HER", "") or os.environ.get("FISH_AUDIO_VOICE_ID_HER", "933563129e564b19a115bedd57b7406a")
+        try:
+            speed = float(getattr(settings, "FISH_AUDIO_SPEED_HER", "") or os.environ.get("FISH_AUDIO_SPEED_HER", "1.2"))
+            volume = float(getattr(settings, "FISH_AUDIO_VOLUME_HER", "") or os.environ.get("FISH_AUDIO_VOLUME_HER", "3.0"))
+        except (TypeError, ValueError):
+            speed, volume = 1.2, 3.0
     model_str = getattr(settings, "FISH_AUDIO_MODEL", "s2.1-pro-free")
     eleven_key = getattr(settings, "ELEVENLABS_API_KEY", "") or os.environ.get("ELEVENLABS_API_KEY", "")
     eleven_voice = getattr(settings, "ELEVENLABS_VOICE_ID", "21m00Tcm4TlvDq8ikWAM")
@@ -312,6 +322,8 @@ def synthesize_scene(
         voice_id=voice_id,
         api_key=api_key,
         model_string=model_str,
+        speed=speed,
+        volume=volume,
     )
 
     if not success or not raw_mp3_path.exists():
