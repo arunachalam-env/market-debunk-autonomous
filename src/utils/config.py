@@ -105,7 +105,7 @@ class Settings:
     # Primary: Fish Audio S2.1 Pro with custom human cloned voice
     TTS_PROVIDER: str = _get("TTS_PROVIDER", default="fish_audio") or "fish_audio"
     FISH_AUDIO_API_KEY: str = _get("FISH_AUDIO_API_KEY", default="") or ""
-    FISH_AUDIO_VOICE_ID: str = _get("FISH_AUDIO_VOICE_ID", default="dc2c982dea5b4ab8a72331056f5aa9c3") or "dc2c982dea5b4ab8a72331056f5aa9c3"  # owner clone "Reflective Young Man"; old d4db default replaced 2026-09-28 (user: "the voice used is not mine")
+    FISH_AUDIO_VOICE_ID: str = _get("FISH_AUDIO_VOICE_ID", default="d8a1340984ee4b63ad1ffae27a6a4339") or "d8a1340984ee4b63ad1ffae27a6a4339"  # Arun English = Fish "ELITE", picked by owner ear-test 2026-09-28; duo + morning solo
     FISH_AUDIO_VOICE_ID_HER: str = _get("FISH_AUDIO_VOICE_ID_HER", default="eb81775a43bc469dafda02de59d13cb7") or "eb81775a43bc469dafda02de59d13cb7"  # Liya = julia, owner-locked 2026-09-28
     FISH_AUDIO_MODEL: str = _get("FISH_AUDIO_MODEL", default="s2.1-pro-free") or "s2.1-pro-free"
     
