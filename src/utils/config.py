@@ -94,7 +94,7 @@ class Settings:
     HER_NAME: str = _get("HER_NAME", default="Liya")  # owner-locked 2026-09-28: Liya, face option C
     STORY_IMAGE_MODEL: str = _get("STORY_IMAGE_MODEL", default="gemini-2.5-flash-image") or "gemini-2.5-flash-image"
     MIN_VIDEO_DURATION: float = float(_get("MIN_VIDEO_DURATION", default=("45.0" if STORY_MODE else "15.0")))
-    MAX_VIDEO_DURATION: float = float(_get("MAX_VIDEO_DURATION", default=("93.0" if STORY_MODE else "45.0")))
+    MAX_VIDEO_DURATION: float = float(_get("MAX_VIDEO_DURATION", default=("93.0" if (STORY_MODE or DIALOGUE_MODE) else "45.0")))
     VISUAL_GENERATION_DELAY_SECONDS: float = float(_get("VISUAL_GENERATION_DELAY_SECONDS", default="10"))
     BGM_VOLUME_DB: float = float(_get("BGM_VOLUME_DB", default="-5.5"))
     BGM_MIX_RETRIES: int = int(_get("BGM_MIX_RETRIES", default="3"))
@@ -106,6 +106,7 @@ class Settings:
     TTS_PROVIDER: str = _get("TTS_PROVIDER", default="fish_audio") or "fish_audio"
     FISH_AUDIO_API_KEY: str = _get("FISH_AUDIO_API_KEY", default="") or ""
     FISH_AUDIO_VOICE_ID: str = _get("FISH_AUDIO_VOICE_ID", default="d4db1b7753414bd29b8c7ef60e794a44") or "d4db1b7753414bd29b8c7ef60e794a44"
+    FISH_AUDIO_VOICE_ID_HER: str = _get("FISH_AUDIO_VOICE_ID_HER", default="eb81775a43bc469dafda02de59d13cb7") or "eb81775a43bc469dafda02de59d13cb7"  # Liya = julia, owner-locked 2026-09-28
     FISH_AUDIO_MODEL: str = _get("FISH_AUDIO_MODEL", default="s2.1-pro-free") or "s2.1-pro-free"
     
     # Secondary Fallback: ElevenLabs TTS
