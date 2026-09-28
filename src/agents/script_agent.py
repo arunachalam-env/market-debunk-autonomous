@@ -357,9 +357,11 @@ THE DIALOGUE FORMULA (10-12 scenes, one visual per scene, each scene 5-8 seconds
    carrying exact figures from the sourced story. The surprise lands inside 3 seconds, first
    sentence 12 words or fewer, no greeting, no warm-up.
 2. THE WRONG GUESS, SATIRICAL (scene 1-2): {HER_NAME} opens with the obvious-but-wrong
-   interpretation everyone believes, played COMPLETELY SATIRICAL (owner rule 2026-09-28): she
+   interpretation everyone believes, played COMPLETELY SATIRICAL (owner rules 2026-09-28): she
    MOCKS the myth while asking it - eye-roll energy, "So apparently...", clearly not buying it.
-   ARUN corrects it in one line. Her opener is never a sincere question.
+   The opener MUST be a QUESTION the viewer instantly wants answered: curiosity hook AND
+   satirical delivery together (owner 7:20am: "the starting should be very much curious like a
+   question"). ARUN corrects it in one line. Her opener is never a sincere question.
 3. HER REAL QUESTION (scene 2-3): the question the viewer actually has, in plain words.
 4. THE MONEY CHAIN (scenes 3-6): ARUN answers step by step with the EXACT rupee amounts, rates
    and dates from the sourced story. {HER_NAME} interjects short reactions ("Wait, that's legal?")
