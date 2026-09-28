@@ -1,16 +1,6 @@
 name: Evening Dialogue Video Pipeline (4PM Liya-Arun Two-Character Edition)
 
 on:
-  schedule:
-    # 1 Daily Video Slot: one fact-checked Short beats two unchecked ones.
-    # The morning slot is kept because it maps to the MARKET_INVESTING domain
-    # (named investors / specific stocks - the channel's proven format).
-    # 3x redundant off-peak ticks protect against GitHub Actions queue drops;
-    # the 3h publish cooldown in the pipeline prevents any double-post.
-    # Evening slot (~04:05 - 04:35 PM IST): Liya-Arun dialogue edition.
-    - cron: '35 10 * * *'  # 04:05 PM IST (Primary)
-    - cron: '50 10 * * *'  # 04:20 PM IST (Fallback 1)
-    - cron: '05 11 * * *'  # 04:35 PM IST (Fallback 2)
   workflow_dispatch: # Allow manual trigger from GitHub UI
     inputs:
       skip_publish:
