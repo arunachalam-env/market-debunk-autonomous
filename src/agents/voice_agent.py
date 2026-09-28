@@ -294,7 +294,7 @@ def synthesize_scene(
     timings_path = audio_dir / f"scene_{scene_id}_timings.json"
 
     api_key = getattr(settings, "FISH_AUDIO_API_KEY", "") or os.environ.get("FISH_AUDIO_API_KEY", "")
-    voice_id = getattr(settings, "FISH_AUDIO_VOICE_ID", "") or os.environ.get("FISH_AUDIO_VOICE_ID", "d4db1b7753414bd29b8c7ef60e794a44")
+    voice_id = getattr(settings, "FISH_AUDIO_VOICE_ID", "") or os.environ.get("FISH_AUDIO_VOICE_ID", "dc2c982dea5b4ab8a72331056f5aa9c3")
     # Dialogue mode (owner-locked 2026-09-28): per-scene speaker -> voice routing.
     # ARUN keeps the owner's English clone; HER gets the dedicated female voice (julia).
     if (speaker or "").strip().upper() == "HER":
@@ -467,5 +467,5 @@ def synthesize_all_scenes(scenes: list[dict], audio_dir: Path, voice: str = DEFA
 
 def get_available_voices() -> list[str]:
     """Return configured Fish Audio voice and fallbacks."""
-    voice_id = getattr(settings, "FISH_AUDIO_VOICE_ID", "d4db1b7753414bd29b8c7ef60e794a44")
+    voice_id = getattr(settings, "FISH_AUDIO_VOICE_ID", "dc2c982dea5b4ab8a72331056f5aa9c3")
     return [f"fish_audio:{voice_id}", "elevenlabs:21m00Tcm4TlvDq8ikWAM", "edge-tts:en-IN-PrabhatNeural"]
