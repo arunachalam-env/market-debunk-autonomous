@@ -148,7 +148,9 @@ jobs:
           GEMMA_FALLBACK_MODEL: ${{ secrets.GEMMA_FALLBACK_MODEL || 'gemma-3-27b-it' }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           FISH_AUDIO_API_KEY: ${{ secrets.FISH_AUDIO_API_KEY }}
-          FISH_AUDIO_VOICE_ID: ${{ secrets.FISH_AUDIO_VOICE_ID || 'd4db1b7753414bd29b8c7ef60e794a44' }}
+          FISH_AUDIO_VOICE_ID: ${{ secrets.FISH_AUDIO_VOICE_ID || 'd8a1340984ee4b63ad1ffae27a6a4339' }}
+          GCP_TTS_API_KEY: ${{ secrets.GCP_TTS_API_KEY }}
+          FISH_AUDIO_VOICE_ID_HER: ${{ secrets.FISH_AUDIO_VOICE_ID_HER || '933563129e564b19a115bedd57b7406a' }}
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           ELEVENLABS_VOICE_ID: ${{ secrets.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM' }}
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
