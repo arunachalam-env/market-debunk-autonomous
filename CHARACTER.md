@@ -2,7 +2,7 @@
 # Market Debunk - Arun (Storybook Look) - LOCKED
 # Drop this file into the repo root. The pipeline must obey it.
 
-**Look:** Muted hand-painted storybook illustration (graphic-novel watercolor)
+**Look:** Muted hand-painted storybook illustration (graphic-novel watercolor), FINTECH-COOL grade: deep teal/navy night shadows + one warm amber accent - palette owner-picked and locked 2026-09-28, no churn during the sprint
 **Status:** LOCKED
 **Date:** 2026-09-27 (world modernized 2026-09-28)
 **Supersedes:** the old photoreal "Arjun (Look F)" document. The channel is now an
@@ -31,8 +31,8 @@ The face is modeled on the real Arun (owner-approved photo reference, Sep 27 202
 keep his real face recognizable in every scene.
 Wardrobe ALWAYS: casual olive-green hoodie. No glasses, no jewelry, no logos.
 Style: muted hand-painted storybook illustration, graphic-novel watercolor
-texture, warm sepia-and-olive palette, soft amber lamplight, slightly
-desaturated, clean lines, gentle painterly shading. Never photoreal, never 3D,
+texture, fintech-cool grade: deep teal-and-navy shadows, one warm amber accent,
+no sepia, clean lines, gentle painterly shading. Never photoreal, never 3D,
 never Pixar.
 ```
 
@@ -63,3 +63,16 @@ with every scene so Arun looks like Arun across all episodes.
 - Narration: third-person storyteller, varied sentence lengths, fragments allowed.
 - Banned vocabulary: trap, exposed, scam, shocking, "did you know", "in this video".
 - Facts: every number must come from the sourced story. The fact-check gate is law.
+
+---
+
+# THE SECOND CHARACTER (4pm dialogue edition, locked 2026-09-28)
+
+| | |
+|---|---|
+| Name | Liya (owner's own pick, 2026-09-28) |
+| Age | 25 |
+| Role | The curious friend in the daily 4pm two-character dialogue. She asks the question the viewer is thinking; Arun answers as the expert. Roles fixed for the 14-day sprint - never alternate. |
+| Look | Young Indian woman, chin-length dark bob haircut, teal denim jacket, small nose stud (face option C). Reference sheet: `assets/character/liya_sheet.png` - rendered in the fintech-cool grade from the start. |
+| Voice | Fish library voice - owner's pick pending. |
+| World | Same modern city apartment world as Arun, same illustration style. |
